@@ -6,23 +6,39 @@ interface Props {
 }
 
 const { posts } = Astro.props
+// 悬停或键盘聚焦时标题和摘要一起右移，两处共用同一组类名
+const shift =
+  'transition duration-300 ease-out motion-safe:group-hover:translate-x-1.5 motion-safe:group-focus-visible:translate-x-1.5'
 ---
 
 {
   posts.length === 0 ? (
-    <p class="text-stone-500">还没有文章。</p>
+    <p class="text-muted">还没有文章。</p>
   ) : (
     <ul class="space-y-6">
       {posts.map((post) => (
-        <li>
-          <a href={`/posts/${post.id}/`} class="group block">
+        <li class="reveal">
+          {/* 悬停或键盘聚焦时：左侧浮出一颗星，标题与摘要向右让出一点位置，标题变强调色 */}
+          <a href={`/posts/${post.id}/`} class="group relative block">
+            <span
+              aria-hidden="true"
+              class="absolute top-0 -left-4 text-sm leading-7 text-deco opacity-0 transition duration-300 ease-out group-hover:opacity-100 group-focus-visible:opacity-100 motion-safe:-translate-x-2 motion-safe:group-hover:translate-x-0 motion-safe:group-focus-visible:translate-x-0"
+            >
+              ✦
+            </span>
             <div class="flex flex-col gap-x-4 sm:flex-row sm:items-baseline sm:justify-between">
-              <h2 class="font-medium group-hover:text-accent">{post.data.title}</h2>
-              <time datetime={formatDate(post.data.date)} class="shrink-0 text-sm tabular-nums text-stone-500">
+              <h2 class:list={['text-heading group-hover:text-accent group-focus-visible:text-accent', shift]}>
+                {post.data.title}
+              </h2>
+              <time datetime={formatDate(post.data.date)} class="shrink-0 text-sm tabular-nums text-muted">
                 {formatDate(post.data.date)}
               </time>
             </div>
-            {post.data.description && <p class="mt-1 text-sm text-stone-500">{post.data.description}</p>}
+            {post.data.description && (
+              <p class:list={['mt-1 text-sm text-muted', shift]}>
+                {post.data.description}
+              </p>
+            )}
           </a>
         </li>
       ))}

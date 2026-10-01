@@ -1,34 +1,237 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/*
+ * 设计 token。取值与用法的说明见 docs/design.md。
+ * 颜色一律写成 light-dark(亮色, 暗色)，跟随系统明暗；组件里只用这些语义名，不直接写色号。
+ */
 @theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
-    "Noto Sans CJK SC", sans-serif;
+  --font-body: "LXGW WenKai Screen", "Kaiti SC", KaiTi, ui-sans-serif, system-ui, -apple-system, "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Noto Serif SC", "Songti SC",
+    "Noto Serif CJK SC", "Source Han Serif SC", serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-  --color-accent: light-dark(#0f766e, #5eead4);
+
+  --color-page: light-dark(#faf9fc, #16141c);
+  --color-surface: light-dark(#f3f1f7, #1f1c28);
+  --color-line: light-dark(#e4e0ec, #322e3f);
+  --color-muted: light-dark(#6e6a7c, #8f8a9f);
+  --color-body: light-dark(#2b2833, #cfcbd9);
+  --color-heading: light-dark(#17151c, #eceaf2);
+  --color-accent: light-dark(#7658c8, #c9bcf5);
+  /* 装饰紫：对比度不够承载文字，只用于星点、竖线、选中底色 */
+  --color-deco: light-dark(#c8baf2, #9483d6);
+
+  --color-note: light-dark(#4a6fa5, #8fb0e0);
+  --color-tip: light-dark(#33725f, #86c9b4);
+  --color-warning: light-dark(#8a6220, #dcb679);
+  --color-danger: light-dark(#b04a5a, #e69aa6);
+  --color-important: light-dark(#a14d8c, #dc9ccb);
 }
 
 @layer base {
   html {
     color-scheme: light dark;
-    scroll-behavior: smooth;
+    /* 霞鹜文楷字面偏小，整体放大一档（17px） */
+    font-size: 106.25%;
+  }
+
+  /* 纸张般的细颗粒：铺满视口、固定不动，很淡地叠在底色上；对底色亮度的影响见 docs/design.md。
+     亮色下直接按透明度叠加；暗色底上那样看不出来，才用 soft-light 混合 */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.045;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    body::before {
+      mix-blend-mode: soft-light;
+      opacity: 0.35;
+    }
+  }
+
+  @media print {
+    body::before {
+      display: none;
+    }
   }
 
   /* 锚点跳转时给标题留出顶部空间 */
   :target {
     scroll-margin-top: 1.5rem;
   }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-deco) 45%, transparent);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+/* ---------- 动效 ---------- */
+
+/* 站内跳转时新旧页面交叉淡入淡出（浏览器原生的跨页面视图过渡，不需要脚本） */
+@view-transition {
+  navigation: auto;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    translate: 0 0.6rem;
+  }
+}
+
+@keyframes float {
+  50% {
+    translate: 0 -0.45rem;
+  }
+}
+
+@keyframes twinkle {
+  50% {
+    opacity: 0.4;
+    scale: 0.75;
+  }
+}
+
+/* 闪烁时要缩放，行内元素得先变成 inline-block */
+.twinkle {
+  display: inline-block;
+}
+
+/* 读者在系统里开了「减弱动态效果」时，下面这些都不生效 */
+@media (prefers-reduced-motion: no-preference) {
+  /* 点目录跳转时平滑滚动 */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* 页面内容进入时自下而上浮现 */
+  main {
+    animation: rise 0.55s ease-out backwards;
+  }
+
+  /* 看板娘缓慢上下浮动 */
+  .mascot {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  /* 星点缓慢闪烁 */
+  .twinkle {
+    animation: twinkle 4.5s ease-in-out infinite;
+  }
+}
+
+/* 跟随滚动的两种效果，用浏览器原生的滚动驱动动画，不需要脚本；不支持的浏览器里内容照常显示、照常滚走 */
+@keyframes hero-out {
+  to {
+    opacity: 0;
+    translate: 0 -1.5rem;
+    scale: 0.96;
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* 首页介绍区：向上滚出视口的过程中逐渐淡出、上移、略缩小 */
+    .hero {
+      transform-origin: 50% 0;
+      animation: hero-out linear both;
+      animation-timeline: view();
+      animation-range: exit 0% exit 100%;
+    }
+
+    /* 文章条目：从视口底部滚进来时逐条浮现；一开始就在视口里的条目不受影响 */
+    .reveal {
+      animation: rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 80%;
+    }
+  }
+}
+
+/* ---------- 角色图 ---------- */
+
+/* 暗色下黑发黑裙会融进背景：压一点亮度，再沿轮廓描一圈淡紫的光 */
+@media (prefers-color-scheme: dark) {
+  .figure {
+    filter: brightness(0.9) drop-shadow(0 0 1px var(--color-accent))
+      drop-shadow(0 0 6px color-mix(in oklab, var(--color-accent) 35%, transparent));
+  }
 }
 
 /* ---------- 正文排版 ---------- */
 
 .prose {
+  --tw-prose-body: var(--color-body);
+  --tw-prose-headings: var(--color-heading);
+  --tw-prose-lead: var(--color-muted);
   --tw-prose-links: var(--color-accent);
+  --tw-prose-bold: var(--color-heading);
+  --tw-prose-counters: var(--color-muted);
+  --tw-prose-bullets: var(--color-deco);
+  --tw-prose-quotes: var(--color-muted);
+  --tw-prose-quote-borders: var(--color-deco);
+  --tw-prose-captions: var(--color-muted);
+  --tw-prose-kbd: var(--color-heading);
+  --tw-prose-code: var(--color-heading);
+  /* 代码块底色不用 Shiki 主题自带的，统一成页面的次级表面 */
+  --tw-prose-pre-bg: var(--color-surface);
+  --tw-prose-pre-code: var(--color-body);
+  --tw-prose-th-borders: var(--color-line);
+  --tw-prose-td-borders: var(--color-line);
   line-height: 1.85;
 }
 
-.prose a {
+.prose :where(h1, h2, h3, h4) {
+  font-family: var(--font-serif);
+  font-weight: 600;
+}
+
+.prose :where(a) {
+  text-decoration-thickness: 1px;
   text-underline-offset: 3px;
+  transition:
+    text-decoration-thickness 0.2s ease-out,
+    text-underline-offset 0.2s ease-out;
+}
+
+.prose :where(a):hover {
+  text-decoration-thickness: 2px;
+  text-underline-offset: 5px;
+}
+
+.prose :where(blockquote) {
+  border-inline-start-width: 3px;
+  font-style: normal;
+  font-weight: 400;
+}
+
+/* 引用不要 typography 默认加的引号 */
+.prose :where(blockquote p)::before,
+.prose :where(blockquote p)::after {
+  content: none;
+}
+
+/* 分隔线画成一颗星 */
+.prose :where(hr) {
+  border: 0;
+  text-align: center;
+}
+
+.prose :where(hr)::after {
+  content: "✦";
+  color: var(--color-deco);
 }
 
 /* 行内代码不要 typography 默认加的反引号 */
@@ -40,19 +243,27 @@
 .prose :where(code):not(:where(pre code)) {
   padding: 0.15em 0.35em;
   border-radius: 0.25rem;
-  background: light-dark(var(--color-stone-100), var(--color-stone-800));
+  background: var(--color-surface);
   font-weight: 500;
 }
 
-.prose img {
+.prose :where(img) {
   margin-inline: auto;
   border-radius: 0.375rem;
 }
 
 /* ---------- 代码高亮：Shiki 双主题，跟随系统明暗 ---------- */
 
+/* 代码块和提示块的一点厚度：顶边一线高光，底下一层很浅的投影 */
+.prose pre.astro-code,
+.callout {
+  box-shadow:
+    inset 0 1px 0 light-dark(rgb(255 255 255 / 0.75), rgb(255 255 255 / 0.04)),
+    0 1px 2px light-dark(color-mix(in oklab, var(--color-body) 5%, transparent), rgb(0 0 0 / 0.25));
+}
+
 .prose pre.astro-code {
-  border: 1px solid light-dark(var(--color-stone-200), var(--color-stone-800));
+  border: 1px solid var(--color-line);
   font-size: 0.875rem;
   line-height: 1.7;
 }
@@ -60,13 +271,12 @@
 .astro-code,
 .astro-code span {
   color: light-dark(var(--shiki-light), var(--shiki-dark));
-  background-color: light-dark(var(--shiki-light-bg), var(--shiki-dark-bg));
 }
 
 /* ---------- Callout ---------- */
 
 .callout {
-  --callout-color: var(--color-sky-600);
+  --callout-color: var(--color-note);
   margin-block: 1.5em;
   padding: 0.75rem 1rem;
   border-left: 3px solid var(--callout-color);
@@ -93,21 +303,22 @@ details.callout:not([open]) > summary.callout-title {
 }
 
 .callout:is([data-callout="tip"], [data-callout="hint"], [data-callout="success"]) {
-  --callout-color: var(--color-emerald-600);
+  --callout-color: var(--color-tip);
 }
 
 .callout:is([data-callout="warning"], [data-callout="caution"], [data-callout="question"]) {
-  --callout-color: var(--color-amber-600);
+  --callout-color: var(--color-warning);
 }
 
 .callout:is([data-callout="danger"], [data-callout="error"], [data-callout="bug"]) {
-  --callout-color: var(--color-red-600);
+  --callout-color: var(--color-danger);
 }
 
+/* important 不用紫色，免得和链接的强调色混淆 */
 .callout:is([data-callout="important"], [data-callout="example"]) {
-  --callout-color: var(--color-violet-600);
+  --callout-color: var(--color-important);
 }
 
 .callout[data-callout="quote"] {
-  --callout-color: var(--color-stone-500);
+  --callout-color: var(--color-muted);
 }

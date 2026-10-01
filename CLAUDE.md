@@ -6,6 +6,7 @@ Personal blog: Astro 7 + TypeScript + Tailwind CSS 4. Articles are written in Ob
 
 - `docs/plan.md` — the original plan (scope, acceptance criteria).
 - `docs/architecture.md` — what every file and directory is for and what it is responsible for. **Standing rule from the user: every change that adds, removes, moves a file or changes a file's responsibility must update this document in the same change.**
+- `docs/design.md` — the visual design. **Its first principle, set by the user: reading comfort comes before everything else** (colour, decoration, motion all yield to it). Covers colour tokens (with contrast figures), fonts, the character images in `pic/`, styling conventions. Update it when the design changes.
 - `docs/decisions.md` — every implementation choice and its trade-off. **When you make or change a decision, record it there** (what was chosen, what was given up, the cost).
 
 ## Commands
@@ -52,9 +53,12 @@ Things that are easy to get wrong:
 - Code blocks use Shiki with `defaultColor: false`: tokens carry only `--shiki-light` / `--shiki-dark` variables and `global.css` picks one with `light-dark()`. Without that CSS rule code is uncoloured.
 - Attachments live outside the content folder (`90 system/attachments` in the real vault). The exporter finds the vault root by walking up from the symlink's real path to `.obsidian`. Only image extensions, only files referenced by published posts, only paths inside the vault — these limits are privacy guards, don't loosen them casually.
 - `PUBLISHED_DIR` env var (defined once in `src/lib/published.ts`) redirects both the content collection and the redirects lookup; `release` uses it to build against `.publish-tmp/` before replacing `published/`. `release` skips the build when the export is identical to the committed `published/`; `--dry-run` always builds.
-- All pages get posts through `src/lib/posts.ts` (`getPosts` / `getTags`) so the public set is identical everywhere. Tags are grouped case-insensitively.
+- The site has only two kinds of page: the home page (lists every post) and `/posts/{slug}/`. All pages get posts through `src/lib/posts.ts` (`getPosts`) so the public set is identical everywhere. Tags are shown on the post page as plain text; there are no tag pages.
 - Adding a public frontmatter field means changing both `publicFrontmatter()` in the export script and the schema in `src/content.config.ts`.
 - Deployment verification (`scripts/lib/vercel.ts`) shells out to the logged-in `vercel` CLI. `vercel ls --meta githubCommitSha=…` does not reliably filter, so results are re-filtered by SHA in code — keep that filter, or a previous deployment's READY gets reported as this release going live.
+- Colours are semantic tokens defined in `@theme` in `src/styles/global.css` as `light-dark(light, dark)` (`bg-page`, `bg-surface`, `border-line`, `text-muted`, `text-body`, `text-heading`, `text-accent`, `text-deco`). Use only these in pages and components — no raw palette colours (`stone-*`), no `dark:` variants, no `prose-invert`. `--color-deco` is decoration only; it does not have enough contrast for text.
+- Headings use `font-serif` with `font-semibold` only: the bundled Noto Serif SC is loaded at weight 600 alone, and the body font (LXGW WenKai Screen) ships only a regular weight.
+- Site images live in `pic/` and are generated from `pic/original/character-sheet.jpg` by `node pic/cut-character.mjs`; don't hand-edit the generated files. `design/preview.html` is a standalone exploration page that is not built and does not stay in sync with the site.
 - The only client-side JavaScript is Vercel Web Analytics (`<Analytics />` in `src/layouts/Base.astro`). It only reports in production on Vercel.
 - `published/` is program-owned. Don't hand-edit it; `release` commits only that path and refuses to run with other staged changes.
 - The export tests build a miniature vault (the `BASE` map in `scripts/export.test.ts`, mirroring the real layout) in the OS temp dir for each test. There are no sample articles in the repo — don't add a fixtures directory back. Never write test content into the user's Obsidian vault.

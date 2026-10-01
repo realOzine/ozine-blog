@@ -1,24 +1,24 @@
 ---
+import { Image } from 'astro:assets'
 import PostList from '../components/PostList.astro'
 import Base from '../layouts/Base.astro'
 import { getPosts } from '../lib/posts'
 import { site } from '../site.config'
+import logo from '../../pic/logo.png'
 
 const posts = await getPosts()
-const recent = posts.slice(0, site.recentCount)
 ---
 
 <Base>
-  <section class="py-6">
-    <h1 class="text-2xl font-semibold tracking-tight">你好，我是 {site.title}</h1>
-    <p class="mt-3 leading-relaxed text-stone-600 dark:text-stone-400">{site.intro}</p>
+  <section class="hero flex flex-col gap-x-7 gap-y-4 py-6 sm:flex-row sm:items-center">
+    <Image src={logo} alt={`${site.title}’s avatar`} width={153} densities={[1, 2]} loading="eager" class="figure w-36 shrink-0 transition duration-500 ease-out motion-safe:hover:scale-105 motion-safe:hover:-rotate-3" />
+    <div>
+      <h1 class="font-serif text-2xl font-semibold text-heading">Hi, I’m {site.title}</h1>
+      <p class="mt-3 leading-relaxed text-muted">{site.intro}</p>
+    </div>
   </section>
 
-  <section class="mt-8">
-    <div class="mb-6 flex items-baseline justify-between">
-      <h2 class="text-sm font-medium text-stone-500">近期文章</h2>
-      {posts.length > recent.length && <a href="/posts/" class="text-sm text-accent">全部文章 →</a>}
-    </div>
-    <PostList posts={recent} />
-  </section>
+  <div class="mt-8">
+    <PostList posts={posts} />
+  </div>
 </Base>

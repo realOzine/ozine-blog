@@ -4,7 +4,7 @@
 
 > **维护规则**：新增、删除、移动文件，或改变某个文件的职责范围时，必须在同一次修改中同步更新本文档。
 
-相关文档：[`plan.md`](plan.md)（最初的规划）、[`decisions.md`](decisions.md)（实现中的选择与取舍）。
+相关文档：[`plan.md`](plan.md)（最初的规划）、[`decisions.md`](decisions.md)（实现中的选择与取舍）、[`design.md`](design.md)（视觉设计）。
 
 ## 1．总览
 
@@ -28,6 +28,8 @@ ozine-blog/
 ├── scripts/                        导出与发布
 ├── src/                            Astro 站点
 ├── docs/                           规划、结构与决策文档
+├── pic/                            角色图与网站图标，及其原图和生成脚本
+├── design/                         视觉设计的探索稿，不参与构建
 ├── astro.config.mjs 等             根目录配置
 ├── .publish-tmp/                   发布时的临时导出目录，Git 忽略
 └── dist/                           构建产物，Git 忽略
@@ -64,38 +66,34 @@ ozine-blog/
 | 文件 | 作用 | 负责范围 |
 | --- | --- | --- |
 | `src/content.config.ts` | 定义 `posts` 内容集合 | 指定从 `published/posts/` 读取文章，并声明公开 frontmatter 的类型。新增公开字段时要与 `scripts/lib/export.ts` 的白名单一起改。 |
-| `src/site.config.ts` | 站点级文案 | 站点名、简介、首页文案、导航项、首页显示的文章数。改文案只需改这里。 |
+| `src/site.config.ts` | 站点级文案 | 站点名、简介、首页文案、GitHub 主页地址。改文案只需改这里。 |
 | `src/lib/published.ts` | 公开副本目录的位置 | 唯一定义 `PUBLISHED_DIR` 环境变量及其默认值 `./published` 的地方，供 `astro.config.mjs` 和 `src/content.config.ts` 共用。 |
-| `src/lib/posts.ts` | 文章与标签的查询 | 所有页面都通过它取文章（按日期倒序）和标签（不区分大小写归并），保证各处公开范围一致。还提供日期格式化。 |
+| `src/lib/posts.ts` | 文章的查询 | 所有页面都通过它取文章（按日期倒序），保证各处公开范围一致。还提供日期格式化。 |
 
 ### 页面（文件路径即网址）
 
 | 文件 | 网址 | 负责范围 |
 | --- | --- | --- |
-| `src/pages/index.astro` | `/` | 简介与近期文章。 |
-| `src/pages/posts/index.astro` | `/posts/` | 全部文章列表，顶部是标签入口。 |
+| `src/pages/index.astro` | `/` | 介绍区（头像与简介，向下滚动时淡出）和全部文章的列表。 |
 | `src/pages/posts/[slug].astro` | `/posts/{slug}/` | 文章详情：标题、日期、标签、正文、目录（桌面端右侧固定，手机端折叠）。 |
-| `src/pages/tags/index.astro` | `/tags/` | 全部标签。 |
-| `src/pages/tags/[tag].astro` | `/tags/{标签}/` | 某个标签下的文章。 |
-| `src/pages/about.astro` | `/about/` | 关于页，正文直接写在文件里。 |
 
 ### 布局、组件、插件、样式
 
 | 文件 | 作用 | 负责范围 |
 | --- | --- | --- |
-| `src/layouts/Base.astro` | 所有页面共用的外壳 | `<head>`、顶部导航、页脚、页面宽度。引入全局样式和 Vercel 访问统计组件（`@vercel/analytics`），因此统计对所有页面生效。 |
-| `src/components/PostList.astro` | 文章列表 | 首页、文章列表页、标签页共用。 |
-| `src/components/TagLinks.astro` | 标签链接组 | 文章列表页、标签页、文章详情页共用；负责生成标签网址。 |
+| `src/layouts/Base.astro` | 所有页面共用的外壳 | `<head>`（含网站图标）、顶栏（站名与 GitHub 图标，没有导航菜单）、页脚、页面宽度、右下角的看板娘。引入全局样式和 Vercel 访问统计组件（`@vercel/analytics`），并在 `<body>` 末尾单独链接两款中文字体的样式表（不挡首屏渲染），因此它们对所有页面生效。 |
+| `src/components/PostList.astro` | 文章列表 | 首页使用。含条目的悬停动效和滚动进入视口时的浮现。 |
+| `src/components/Tags.astro` | 标签组 | 文章详情页用它显示这篇文章的标签。只是文字，不是链接（站点没有标签页）。 |
 | `src/components/Toc.astro` | 文章目录 | 渲染二、三级标题的链接；显示位置由文章详情页决定。 |
 | `src/plugins/callout.ts` | Callout 渲染插件 | 构建时把 `> [!type]` 引用块转成提示块的 HTML 结构。只管结构，不管颜色。 |
-| `src/styles/global.css` | 全局样式 | 引入 Tailwind 与排版插件、字体与主题色、正文排版微调、代码高亮的明暗切换、Callout 的外观。 |
+| `src/styles/global.css` | 全局样式 | 引入 Tailwind 与排版插件；定义全部设计 token（字体、颜色，见 `docs/design.md`）；页面进入、看板娘浮动、星点闪烁、跨页面过渡，以及跟随滚动的介绍区淡出和文章条目浮现这几种动效；角色图的暗色处理；正文排版；代码高亮的明暗切换；Callout 的外观。 |
 
 ## 5．根目录配置
 
 | 文件 | 作用 | 负责范围 |
 | --- | --- | --- |
-| `astro.config.mjs` | Astro 配置 | 网址末尾斜杠、读取重定向表、Markdown 处理器与 Callout 插件、代码高亮主题、接入 Tailwind。公开副本目录取自 `src/lib/published.ts`。 |
-| `package.json` | 依赖与命令 | 所有 `npm run` 命令的定义。 |
+| `astro.config.mjs` | Astro 配置 | 网址末尾斜杠、读取重定向表、Markdown 处理器与 Callout 插件、代码高亮主题、接入 Tailwind、禁止把字体分片内联进样式表。公开副本目录取自 `src/lib/published.ts`。 |
+| `package.json` | 依赖与命令 | 所有 `npm run` 命令的定义。依赖里的 `lxgw-wenkai-screen-web` 和 `@fontsource/noto-serif-sc` 是随站点部署的中文字体；开发依赖里的 `sharp` 供 `pic/cut-character.mjs` 使用。 |
 | `package-lock.json` | 依赖版本锁定 | 由 npm 维护。 |
 | `tsconfig.json` | TypeScript 配置 | 继承 Astro 严格模式；允许脚本用 `.ts` 扩展名互相导入。 |
 | `.vercel/` | Vercel CLI 的项目关联信息 | 由 `vercel link` 生成，Git 忽略。核实部署时 CLI 靠它知道查哪个项目。 |
@@ -110,8 +108,31 @@ ozine-blog/
 | `docs/plan.md` | 最初的项目规划 | 目标、范围、验收标准。作为历史记录保留，实现与它不一致之处记在 `docs/decisions.md`。 |
 | `docs/decisions.md` | 决策与取舍记录 | 每个实现选择：选了什么、放弃了什么、代价是什么。做出或改变决定时更新。 |
 | `docs/architecture.md` | 本文档 | 文件与目录的作用和职责范围。 |
+| `docs/design.md` | 视觉设计文档 | 气质、颜色 token 及对比度、字体、角色图的用法、各处样式约定、改设计时该动哪里。改了设计就更新它。 |
 
-## 7．一次发布中各部分的参与顺序
+## 7．`pic/` 与 `design/`：图片与设计探索稿
+
+### `pic/`
+
+站点用到的图片都在这里，由 `src/` 通过 Astro 的图片优化引入（构建时转成 WebP）。导出和发布流程不碰这个目录。
+
+| 文件 | 作用 | 负责范围 |
+| --- | --- | --- |
+| `pic/original/character-sheet.jpg` | 角色设定图原图 | 下面三张图的唯一来源，站点不直接使用。 |
+| `pic/cut-character.mjs` | 生成站点图片的脚本 | `node pic/cut-character.mjs`：按脚本里写定的位置从设定图裁出头像和全身像，抠掉白底和标注线，并生成网站图标。只在换图时手动运行，不属于构建或发布流程。依赖 `sharp`（已声明为开发依赖）。 |
+| `pic/logo.png` | 头像（透明底） | 由脚本生成，不要手工修改。用于首页介绍区。 |
+| `pic/character.png` | 全身立绘（透明底） | 由脚本生成，不要手工修改。用于所有页面右下角的看板娘。 |
+| `pic/favicon.svg` | 网站图标 | 由脚本生成，不要手工修改。头像垫浅色圆角底。 |
+
+### `design/`
+
+不在 `src/` 里，Astro 不会构建或部署它；站点代码也不引用它。
+
+| 文件 | 作用 | 负责范围 |
+| --- | --- | --- |
+| `design/preview.html` | 配色方案的独立预览页 | 直接用浏览器打开（字体从 jsDelivr 加载，需要联网；图片引用 `pic/`）。定稿前的探索稿，保留作以后试配色的地方：可切换明暗和三种正文字体，页内脚本实测各组合的 WCAG 对比度。它和正式站点不会自动同步，以 `src/styles/global.css` 和 `docs/design.md` 为准。 |
+
+## 8．一次发布中各部分的参与顺序
 
 1. `scripts/publish.ts` 检查 Git 状态。
 2. `scripts/lib/export.ts` 读取 `content`，校验并导出到 `.publish-tmp/`。

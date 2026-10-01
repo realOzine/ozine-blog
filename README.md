@@ -5,6 +5,7 @@
 - 规划：[`docs/plan.md`](docs/plan.md)
 - 项目结构与各文件职责：[`docs/architecture.md`](docs/architecture.md)
 - 实现中的选择与取舍：[`docs/decisions.md`](docs/decisions.md)
+- 视觉设计（配色、字体、角色图）：[`docs/design.md`](docs/design.md)
 
 ## 工作方式
 

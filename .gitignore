@@ -11,3 +11,6 @@ dist/
 /.publish-tmp/
 .vercel
 .env*
+
+# 角色设定图原图：个人素材，只留在本机，不进入公开仓库
+/pic/original/

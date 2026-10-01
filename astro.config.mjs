@@ -27,5 +27,7 @@ export default defineConfig({
   },
   vite: {
     plugins: [tailwindcss()],
+    // 字体分片不内联成 base64：它们靠 unicode-range 按需下载，内联进样式表就变成人人都要下载。其它文件沿用默认规则。
+    build: { assetsInlineLimit: (file) => (/\.woff2?$/.test(file) ? false : undefined) },
   },
 })

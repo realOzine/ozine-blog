@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ozine · 配色预览</title>
+<link rel="icon" type="image/svg+xml" href="../pic/favicon.svg">
+<!-- 中文网络字体：都按 unicode-range 分片，浏览器只下载页面用到的那些字 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-screen-web@1.522.0/lxgwwenkaiscreen/result.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/noto-serif-sc/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/noto-serif-sc/600.css">
+<!--
+  配色方案的独立预览页：直接用浏览器打开，不经过 Astro 构建，也不会被部署。
+  配色已定稿并搬进 src/styles/global.css；这里保留作试配色的地方，不与正式站点同步。
+-->
+<style>
+/* ---------- 语义 token：每项都是 light-dark(亮色, 暗色) ---------- */
+:root {
+  color-scheme: light dark;
+
+  --bg:        light-dark(#faf9fc, #16141c);
+  --surface:   light-dark(#f3f1f7, #1f1c28);
+  --border:    light-dark(#e4e0ec, #322e3f);
+  --muted:     light-dark(#6e6a7c, #8f8a9f);
+  --text:      light-dark(#2b2833, #cfcbd9);
+  --heading:   light-dark(#17151c, #eceaf2);
+  --accent:    light-dark(#7658c8, #c9bcf5);
+  --deco:      light-dark(#c8baf2, #9483d6);
+
+  /* Callout 语义色：整体降饱和，important 避开紫色以免和强调色混淆 */
+  --c-note:      light-dark(#4a6fa5, #8fb0e0);
+  --c-tip:       light-dark(#33725f, #86c9b4);
+  --c-warning:   light-dark(#8a6220, #dcb679);
+  --c-danger:    light-dark(#b04a5a, #e69aa6);
+  --c-important: light-dark(#a14d8c, #dc9ccb);
+
+  /* 代码高亮示意色（正式实现时换成 Shiki 主题） */
+  --s-keyword:  light-dark(#7658c8, #c9bcf5);
+  --s-string:   light-dark(#33705d, #9ed4bf);
+  --s-function: light-dark(#2f5fa8, #9dbcf0);
+  --s-number:   light-dark(#a8527a, #eaa6c4);
+  --s-comment:  light-dark(#807c90, #6f6a80);
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Noto Sans CJK SC", sans-serif;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Noto Serif SC", "Songti SC",
+    "Noto Serif CJK SC", "Source Han Serif SC", serif;
+  --font-kai: "LXGW WenKai Screen", "Kaiti SC", KaiTi, var(--font-serif);
+
+  /* 正文字体与字号由 data-font 切换；默认霞鹜文楷，字面偏小所以字号大一档 */
+  --font-body: var(--font-kai);
+  --size-body: 1.0625rem;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+:root[data-font="serif"] { --font-body: var(--font-serif); --size-body: 1rem; }
+:root[data-font="sans"]  { --font-body: var(--font-sans);  --size-body: 1rem; }
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"]  { color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--size-body);
+  line-height: 1.85;
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: color-mix(in oklab, var(--deco) 45%, transparent); }
+a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+
+.wrap { max-width: 44rem; margin: 0 auto; padding: 0 1.25rem; }
+
+/* ---------- 顶栏 ---------- */
+header.site {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding-block: 1.5rem; border-bottom: 1px solid var(--border);
+}
+.brand {
+  display: flex; align-items: center; gap: .6rem;
+  color: var(--heading); text-decoration: none;
+  font-family: var(--font-serif); font-size: 1.35rem; letter-spacing: .32em;
+}
+.brand .star { color: var(--deco); letter-spacing: 0; font-size: .9em; }
+nav { display: flex; align-items: center; gap: 1.1rem; font-size: .925rem; }
+nav a { color: var(--muted); text-decoration: none; }
+nav a:hover, nav a[aria-current] { color: var(--heading); }
+nav a[aria-current] { box-shadow: 0 2px 0 var(--deco); }
+
+.switch { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; padding: 2px; }
+.switch button {
+  font: inherit; font-size: .8rem; line-height: 1; padding: .35rem .7rem;
+  border: 0; border-radius: 999px; background: none; color: var(--muted); cursor: pointer;
+}
+.switch button[aria-pressed="true"] { background: var(--surface); color: var(--heading); }
+.fontbar { display: flex; align-items: center; gap: .6rem; margin-top: 1rem; color: var(--muted); font-size: .85rem; font-family: var(--font-sans); }
+
+/* ---------- 通用 ---------- */
+h1, h2, h3 { color: var(--heading); font-family: var(--font-serif); font-weight: 600; line-height: 1.35; }
+h1 { font-size: 2rem; margin: 0 0 .5rem; }
+h2 { font-size: 1.4rem; margin: 2.5rem 0 .8rem; }
+h3 { font-size: 1.12rem; margin: 2rem 0 .6rem; }
+.label {
+  margin: 3.5rem 0 1.25rem; color: var(--muted);
+  font-size: .78rem; letter-spacing: .18em; text-transform: uppercase;
+  display: flex; align-items: center; gap: .75rem;
+}
+.label::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.meta { color: var(--muted); font-size: .875rem; }
+.tag {
+  display: inline-block; padding: .05rem .55rem; border-radius: 999px;
+  background: var(--surface); color: var(--muted); font-size: .8rem; text-decoration: none;
+}
+.tag:hover { color: var(--accent); }
+
+/* ---------- Logo ---------- */
+.hero { display: grid; grid-template-columns: 11rem 1fr; gap: 1.75rem; align-items: center; margin-top: 2.5rem; }
+.hero p { margin: .4rem 0 0; }
+/* 角色图是从设定图里抠出来的透明底 PNG。亮色下直接放；
+   暗色下黑发黑裙会融进背景，所以压一点亮度，再用淡紫的 drop-shadow 沿轮廓描一圈边。 */
+.logo { width: 100%; display: block; }
+.mascot {
+  position: fixed; right: 1.5rem; bottom: 0; width: 8.5rem; height: auto;
+  pointer-events: none; user-select: none;
+}
+@media (max-width: 68rem) { .mascot { display: none; } }
+:root[data-theme="dark"] :is(.logo, .mascot) {
+  filter: brightness(.9) drop-shadow(0 0 1px #b9a8f0) drop-shadow(0 0 6px rgb(185 168 240 / .35));
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] :is(.logo, .mascot) {
+    filter: brightness(.9) drop-shadow(0 0 1px #b9a8f0) drop-shadow(0 0 6px rgb(185 168 240 / .35));
+  }
+}
+
+/* ---------- 色板 ---------- */
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: .75rem; }
+.swatch { border: 1px solid var(--border); border-radius: .5rem; overflow: hidden; font-size: .8rem; line-height: 1.5; }
+.swatch i { display: block; height: 3.25rem; border-bottom: 1px solid var(--border); }
+.swatch div { padding: .45rem .6rem; }
+.swatch b { display: block; color: var(--heading); font-weight: 600; }
+.swatch code { color: var(--muted); font-family: var(--font-mono); font-size: .75rem; }
+
+table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); font-weight: 500; }
+td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.ok { color: var(--c-tip); } .bad { color: var(--c-danger); font-weight: 600; }
+
+/* ---------- 文章列表 ---------- */
+.posts { list-style: none; margin: 0; padding: 0; }
+.posts li { display: flex; gap: 1.25rem; padding: .6rem 0; border-bottom: 1px dashed var(--border); }
+.posts time { flex: none; width: 6.5rem; color: var(--muted); font-size: .875rem; font-variant-numeric: tabular-nums; }
+.posts a { color: var(--heading); text-decoration: none; }
+.posts a:hover { color: var(--accent); }
+
+/* ---------- 正文 ---------- */
+article blockquote {
+  margin: 1.5em 0; padding: .1rem 1.1rem; border-left: 3px solid var(--deco); color: var(--muted);
+}
+article hr { border: 0; text-align: center; margin: 2.5rem 0; }
+article hr::after { content: "✦"; color: var(--deco); }
+code { font-family: var(--font-mono); font-size: .875em; }
+:not(pre) > code { padding: .15em .35em; border-radius: .25rem; background: var(--surface); color: var(--heading); }
+pre {
+  margin: 1.5em 0; padding: 1rem 1.1rem; overflow-x: auto;
+  background: var(--surface); border: 1px solid var(--border); border-radius: .5rem;
+  font-size: .875rem; line-height: 1.7;
+}
+pre .k { color: var(--s-keyword); } pre .s { color: var(--s-string); }
+pre .f { color: var(--s-function); } pre .n { color: var(--s-number); }
+pre .c { color: var(--s-comment); font-style: italic; }
+
+.callout {
+  --callout-color: var(--c-note);
+  margin-block: 1.5em; padding: .75rem 1rem;
+  border-left: 3px solid var(--callout-color); border-radius: .375rem;
+  background: color-mix(in oklab, var(--callout-color) 9%, transparent);
+}
+.callout > :last-child { margin-bottom: 0; }
+.callout-title { margin: 0 0 .35em; color: var(--callout-color); font-weight: 600; }
+.callout p { margin: 0 0 .5em; }
+.callout[data-callout="tip"] { --callout-color: var(--c-tip); }
+.callout[data-callout="warning"] { --callout-color: var(--c-warning); }
+.callout[data-callout="danger"] { --callout-color: var(--c-danger); }
+.callout[data-callout="important"] { --callout-color: var(--c-important); }
+.callout[data-callout="quote"] { --callout-color: var(--muted); }
+
+footer { margin: 4rem 0 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--muted); font-size: .85rem; text-align: center; }
+footer .star { color: var(--deco); }
+
+@media (max-width: 34rem) {
+  .hero { grid-template-columns: 1fr; }
+  .hero .logo { max-width: 11rem; }
+  header.site { flex-wrap: wrap; }
+  .posts li { flex-direction: column; gap: 0; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="site">
+    <a class="brand" href="#"><span class="star">✦</span>ozine</a>
+    <nav>
+      <a href="#" aria-current="page">首页</a>
+      <a href="#">文章</a>
+      <a href="#">标签</a>
+      <a href="#">关于</a>
+      <span class="switch" role="group" aria-label="明暗模式">
+        <button data-set="light">亮</button>
+        <button data-set="auto">跟随</button>
+        <button data-set="dark">暗</button>
+      </span>
+    </nav>
+  </header>
+
+  <div class="fontbar">正文字体
+    <span class="switch" role="group" aria-label="正文字体">
+      <button data-font="kai">霞鹜文楷</button>
+      <button data-font="serif">思源宋体</button>
+      <button data-font="sans">系统黑体</button>
+    </span>
+  </div>
+
+  <section class="hero">
+    <img class="logo" src="../pic/logo.png" alt="ozine 标志">
+    <div>
+      <h1>安静地写，认真地想</h1>
+      <p>墨色线稿与大面积留白做主体，淡紫只在少数地方出现：链接、选中的文字、分隔的星点。</p>
+      <p class="meta">这是配色预览页，不是正式页面。用右上角的开关对比明暗两版。</p>
+    </div>
+  </section>
+
+  <div class="label">色板</div>
+  <div class="swatches" id="swatches"></div>
+
+  <div class="label">对比度实测（WCAG）</div>
+  <table>
+    <thead><tr><th>前景</th><th>背景</th><th>对比度</th><th>要求</th><th>结果</th></tr></thead>
+    <tbody id="contrast"></tbody>
+  </table>
+
+  <div class="label">首页 · 文章列表</div>
+  <ul class="posts">
+    <li><time>2026-09-24</time><a href="#">用 Sätteri 写一个 Callout 插件</a></li>
+    <li><time>2026-09-02</time><a href="#">从 Obsidian 到静态站点：一条只读的发布管线</a></li>
+    <li><time>2026-08-15</time><a href="#">light-dark() 与一套不需要 JavaScript 的明暗主题</a></li>
+    <li><time>2026-07-30</time><a href="#">为什么标题锚点不该自己算</a></li>
+  </ul>
+
+  <div class="label">文章页</div>
+  <article>
+    <h1>light-dark() 与一套不需要 JavaScript 的明暗主题</h1>
+    <p class="meta">2026-08-15 · <a class="tag" href="#">CSS</a> <a class="tag" href="#">设计</a> <a class="tag" href="#">Astro</a></p>
+
+    <p>长时间阅读时，最先让人疲劳的往往不是字号，而是对比度。纯黑的字压在纯白的底上，边缘会显得过于锐利；把两端都往中间收一点，文字就安静下来了。这一段用来检查正文的灰度、行高，以及<a href="#">一个正文里的链接</a>看起来是否突兀。</p>
+
+    <h2>语义 token 而不是色号</h2>
+    <p>组件里不应该出现 <code>stone-100</code> 这样的原始色，而应该写 <code>var(--surface)</code>。这样换一套配色只需要改一处，明暗两版也由同一个变量承担。</p>
+
+<pre><code><span class="c">/* 每个 token 同时声明亮色与暗色 */</span>
+:root {
+  <span class="f">color-scheme</span>: light dark;
+  <span class="f">--bg</span>:     <span class="k">light-dark</span>(<span class="n">#faf9fc</span>, <span class="n">#16141c</span>);
+  <span class="f">--accent</span>: <span class="k">light-dark</span>(<span class="n">#6d4fc2</span>, <span class="n">#b9a8f0</span>);
+}
+
+<span class="k">export function</span> <span class="f">contrast</span>(a: <span class="k">number</span>, b: <span class="k">number</span>) {
+  <span class="k">const</span> [hi, lo] = a &gt; b ? [a, b] : [b, a];
+  <span class="k">return</span> (hi + <span class="n">0.05</span>) / (lo + <span class="n">0.05</span>); <span class="c">// "AA" 要求 ≥ 4.5</span>
+}</code></pre>
+
+    <h3>引用与分隔</h3>
+    <blockquote><p>颜色用得越少，每一处颜色说的话就越重。</p></blockquote>
+    <p>下面是一条分隔线，用了 logo 里的那颗星。</p>
+    <hr>
+
+    <h3>提示块</h3>
+    <div class="callout" data-callout="note"><p class="callout-title">Note</p><p>普通说明。蓝灰色，饱和度压低，不和链接抢注意力。</p></div>
+    <div class="callout" data-callout="tip"><p class="callout-title">Tip</p><p>建议与技巧。偏灰的青绿色。</p></div>
+    <div class="callout" data-callout="warning"><p class="callout-title">Warning</p><p>需要留意的地方。琥珀色，是整页唯一的暖色。</p></div>
+    <div class="callout" data-callout="danger"><p class="callout-title">Danger</p><p>会出问题的操作。偏玫瑰的红色。</p></div>
+    <div class="callout" data-callout="important"><p class="callout-title">Important</p><p>重点。改用梅红色，避开紫色，免得被当成链接。</p></div>
+    <div class="callout" data-callout="quote"><p class="callout-title">Quote</p><p>引文。直接用次要文字的灰。</p></div>
+
+    <h3>表格</h3>
+    <table>
+      <thead><tr><th>角色</th><th>用在哪里</th></tr></thead>
+      <tbody>
+        <tr><td>强调色</td><td>链接、焦点环、代码里的关键字</td></tr>
+        <tr><td>装饰紫</td><td>选中文本、星点、引用竖线、当前导航下划线</td></tr>
+      </tbody>
+    </table>
+  </article>
+
+  <footer><span class="star">✦</span> ozine · 配色预览初稿</footer>
+</div>
+
+<img class="mascot" src="../pic/character.png" alt="">
+
+<script>
+// 只为预览服务：明暗切换、色板渲染、对比度计算。正式站点不需要这些脚本。
+const root = document.documentElement;
+const TOKENS = [
+  ['--bg', '页面背景'], ['--surface', '次级表面'], ['--border', '边框'],
+  ['--muted', '次要文字'], ['--text', '正文'], ['--heading', '标题'],
+  ['--accent', '强调色'], ['--deco', '装饰紫'],
+  ['--c-note', 'Note'], ['--c-tip', 'Tip'], ['--c-warning', 'Warning'],
+  ['--c-danger', 'Danger'], ['--c-important', 'Important'],
+];
+// [前景, 背景, 最低对比度]
+const PAIRS = [
+  ['--text', '--bg', 4.5], ['--heading', '--bg', 4.5], ['--muted', '--bg', 4.5], ['--accent', '--bg', 4.5],
+  ['--text', '--surface', 4.5], ['--muted', '--surface', 4.5], ['--accent', '--surface', 4.5],
+  ['--s-comment', '--surface', 3], ['--s-string', '--surface', 4.5], ['--s-function', '--surface', 4.5], ['--s-number', '--surface', 4.5],
+  ['--c-note', '--bg', 4.5], ['--c-tip', '--bg', 4.5], ['--c-warning', '--bg', 4.5],
+  ['--c-danger', '--bg', 4.5], ['--c-important', '--bg', 4.5],
+  ['--deco', '--bg', 0], ['--border', '--bg', 0],
+];
+const NAMES = Object.fromEntries(TOKENS);
+
+// 借一个 canvas 把 light-dark() 解析后的颜色转成 RGB
+const probe = document.createElement('span');
+document.body.append(probe);
+const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+function rgb(token) {
+  probe.style.color = `var(${token})`;
+  ctx.clearRect(0, 0, 1, 1);
+  ctx.fillStyle = getComputedStyle(probe).color;
+  ctx.fillRect(0, 0, 1, 1);
+  return [...ctx.getImageData(0, 0, 1, 1).data].slice(0, 3);
+}
+const hex = (c) => '#' + c.map((v) => v.toString(16).padStart(2, '0')).join('');
+function luminance(c) {
+  const [r, g, b] = c.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+function ratio(a, b) {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+function render() {
+  document.getElementById('swatches').innerHTML = TOKENS.map(([t, name]) =>
+    `<div class="swatch"><i style="background:var(${t})"></i><div><b>${name}</b><code>${t} ${hex(rgb(t))}</code></div></div>`).join('');
+  document.getElementById('contrast').innerHTML = PAIRS.map(([fg, bg, min]) => {
+    const r = ratio(rgb(fg), rgb(bg));
+    const result = min === 0 ? '<span class="meta">仅装饰</span>'
+      : r >= min ? '<span class="ok">通过</span>' : '<span class="bad">不足</span>';
+    return `<tr><td><span style="color:var(${fg})">■</span> ${NAMES[fg] ?? fg}</td><td>${NAMES[bg] ?? bg}</td>` +
+      `<td class="num">${r.toFixed(2)}</td><td class="num">${min ? '≥ ' + min : '—'}</td><td>${result}</td></tr>`;
+  }).join('');
+}
+
+function setTheme(mode) {
+  root.dataset.theme = mode;
+  document.querySelectorAll('.switch button[data-set]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.set === mode));
+  render();
+}
+document.querySelectorAll('.switch button[data-set]').forEach((b) => b.addEventListener('click', () => setTheme(b.dataset.set)));
+function setFont(font) {
+  root.dataset.font = font;
+  document.querySelectorAll('.switch button[data-font]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.font === font));
+}
+document.querySelectorAll('.switch button[data-font]').forEach((b) => b.addEventListener('click', () => setFont(b.dataset.font)));
+setFont('kai');
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+setTheme('auto');
+</script>
+</body>
+</html>
