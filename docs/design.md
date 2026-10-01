@@ -113,7 +113,7 @@ Shiki 双主题：亮色 `github-light`、暗色 `github-dark`（在 `astro.conf
 
 | 文件 | 内容 | 用在哪里 |
 | --- | --- | --- |
-| `pic/original/character-sheet.jpg` | 角色设定图原图（1280×720） | 不直接用于站点，是下面三张图的来源 |
+| `pic/original/character-sheet.jpg` | 角色设定图原图（1280×720） | 不直接用于站点，是下面三张图的来源。个人素材，只留在本机，不进入公开仓库（`.gitignore` 已排除） |
 | `pic/logo.png` | 头像，透明底（421×431） | 首页介绍区（`src/pages/index.astro`） |
 | `pic/character.png` | 全身立绘，透明底（421×1355） | 所有页面右下角的看板娘（`src/layouts/Base.astro`） |
 | `pic/favicon.svg` | 头像垫浅色圆角底 | 网站图标（`src/layouts/Base.astro`） |
