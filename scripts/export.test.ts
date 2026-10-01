@@ -5,14 +5,176 @@ import path from 'node:path'
 import { test } from 'node:test'
 import { exportContent, formatIssue } from './lib/export.ts'
 
-const FIXTURE = path.resolve(import.meta.dirname, '../fixtures/vault')
+function lines(...content: string[]): string {
+  return content.join('\n') + '\n'
+}
 
-/** 复制一份样本库到临时目录，可追加或覆盖文件（路径相对库根目录）。 */
+// 测试用的最小 Obsidian 库：结构与真实库一致（博客目录、库外附件目录、库外私密笔记）。
+// 每个测试把它写入系统临时目录，仓库里不保存样本文章。
+const BASE: Record<string, string> = {
+  '.obsidian/app.json': '{ "attachmentFolderPath": "90 system/attachments" }',
+  '30 domain/私密笔记.md': lines(
+    '# 私密笔记',
+    '',
+    '这篇笔记在博客目录之外，任何情况下都不应出现在公开副本里。',
+  ),
+  '40 blog/Go/接口与泛型.md': lines(
+    '---',
+    'title: 接口与泛型怎么选',
+    'slug: go-interfaces-vs-generics',
+    'status: published',
+    'date: 2026-09-30',
+    'updated: 2026-10-01',
+    'tags:',
+    '  - Go',
+    '  - 泛型',
+    'description: 什么时候用接口，什么时候用类型参数。',
+    'redirect_from: go-generics-old',
+    '---',
+    '',
+    '这篇是[[理解接口]]的续篇，默认你已经读过[[理解接口#接口值|接口值的结构]]。',
+    '',
+    '## 先回顾',
+    '',
+    '三种双链写法：',
+    '',
+    '- 文章名：[[理解接口]]',
+    '- 显示别名：[[Go/理解接口|上一篇文章]]',
+    '- 标题锚点：[[理解接口#类型断言]]',
+    '',
+    '| 写法 | 例子 |',
+    '| --- | --- |',
+    '| 表格里的别名 | [[理解接口\\|接口]] |',
+    '',
+    '## 一张图',
+    '',
+    '![[发布 流程.webp|480]]',
+    '',
+    '![[interface-diagram.png|同一张图的第二次引用]]',
+    '',
+    '%%',
+    '多行注释：',
+    '这里记了一些还没想清楚的东西，不应公开。',
+    '%%',
+    '',
+    '## 结论',
+    '',
+    '> [!important] 经验法则',
+    '> 需要**行为多态**用接口，需要**类型保持**用泛型。详见[[博客搭建记录]]。',
+  ),
+  '40 blog/Go/理解接口.md': lines(
+    '---',
+    'title: 理解 Go 的接口',
+    'slug: go-interfaces',
+    'status: published',
+    'date: 2026-09-29',
+    'tags:',
+    '  - Go',
+    'description: 从行为约束理解接口。',
+    'private_note: 这个字段不应出现在公开副本里',
+    '---',
+    '',
+    'Go 的接口描述的是**行为**，而不是数据。%%这是只给自己看的注释，不应公开%%',
+    '',
+    '> [!note]',
+    '> 接口是隐式实现的：类型不需要声明自己实现了哪个接口。',
+    '',
+    '## 隐式实现',
+    '',
+    '只要方法集合满足要求，类型就实现了接口：',
+    '',
+    '```go',
+    'type Reader interface {',
+    '	Read(p []byte) (n int, err error)',
+    '}',
+    '',
+    '// 代码块里的 [[双链]] 和 ![[图片.png]] 应保持原样',
+    'type File struct{}',
+    '',
+    'func (f *File) Read(p []byte) (int, error) { return 0, nil }',
+    '```',
+    '',
+    '行内代码同理：`[[不是链接]]`。',
+    '',
+    '![接口示意图](../../90%20system/attachments/interface-diagram.png)',
+    '',
+    '## 接口值',
+    '',
+    '接口值由**动态类型**和**动态值**两部分组成。',
+    '',
+    '> [!warning] nil 接口的陷阱',
+    '> 持有 nil 指针的接口值本身**不等于** nil。',
+    '>',
+    '> ```go',
+    '> var f *File',
+    '> var r Reader = f',
+    '> fmt.Println(r == nil) // false',
+    '> ```',
+    '',
+    '### 类型断言',
+    '',
+    '用 `v, ok := r.(*File)` 取回具体类型。回到[[#隐式实现]]。',
+    '',
+    '## 小结',
+    '',
+    '> [!tip]- 展开看一句话总结',
+    '> 接口越小越好。',
+  ),
+  '40 blog/drafts/未完成的草稿.md': lines(
+    '---',
+    'title: 未完成的草稿',
+    'status: draft',
+    '---',
+    '',
+    '草稿不要求 slug 和 date，也不会被导出。它引用的图片同样不能被导出：',
+    '',
+    '![[private-screenshot.png]]',
+    '',
+    '草稿里的失效链接不应阻止发布：[[还没写的文章]]',
+  ),
+  '40 blog/写作/博客搭建记录.md': lines(
+    '---',
+    'title: 博客搭建记录',
+    'slug: building-this-blog',
+    'status: published',
+    'date: 2026-09-20',
+    'tags:',
+    '  - 写作',
+    '  - go',
+    '---',
+    '',
+    '没有 description 的文章，标签 `go` 与 `Go` 应归为同一个标签。',
+    '',
+    '## 流程',
+    '',
+    '1. 在 Obsidian 写作',
+    '2. 执行发布命令',
+    '3. Vercel 自动部署',
+    '',
+    '外部链接保持不变：[Astro](https://astro.build)，外部图片也是：',
+    '',
+    '![外部图片](https://astro.build/assets/press/astro-logo-dark.svg)',
+  ),
+  '40 blog/旧文.md': lines(
+    '---',
+    'title: 一篇已撤回的旧文',
+    'slug: old-post',
+    'status: withdrawn',
+    'date: 2026-08-01',
+    '---',
+    '',
+    '撤回后，公开副本和页面都应被移除。',
+  ),
+  '90 system/attachments/interface-diagram.png': '(image)',
+  '90 system/attachments/private-screenshot.png': '(image)',
+  '90 system/attachments/发布 流程.webp': '(image)',
+}
+
+/** 在临时目录里生成一份基础库，可追加或覆盖文件（路径相对库根目录）。 */
 function vault(files: Record<string, string> = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'blog-export-'))
   const root = path.join(dir, 'vault')
-  fs.cpSync(FIXTURE, root, { recursive: true })
-  for (const [file, content] of Object.entries(files)) {
+  for (const [file, content] of Object.entries({ ...BASE, ...files })) {
     fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true })
     fs.writeFileSync(path.join(root, file), content)
   }
@@ -176,7 +338,7 @@ test('双链重名歧义', () => {
     '40 blog/另一个目录/理解接口.md': post('status: draft'),
   })
   const { issues } = v.run()
-  // 样本中原有的引用同样会变得有歧义
+  // 基础库中原有的引用同样会变得有歧义
   assert.ok(issues.length >= 1)
   assert.ok(issues.every((i) => /有歧义，匹配到：.*Go\/理解接口\.md.*另一个目录\/理解接口\.md/.test(i.message)))
   assert.ok(issues.some((i) => i.file === 'a.md'))

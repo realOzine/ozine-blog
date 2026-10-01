@@ -27,7 +27,6 @@ ozine-blog/
 ├── published/                      公开副本，由程序维护
 ├── scripts/                        导出与发布
 ├── src/                            Astro 站点
-├── fixtures/                       测试用的模拟库
 ├── docs/                           规划、结构与决策文档
 ├── astro.config.mjs 等             根目录配置
 ├── .publish-tmp/                   发布时的临时导出目录，Git 忽略
@@ -56,7 +55,7 @@ ozine-blog/
 | `scripts/publish.ts` | `npm run release` 的命令行入口 | 串联发布流程：检查 Git 状态 → 导出到 `.publish-tmp/` → 用临时副本构建 → 替换 `published/` → 只提交 `published/`（提交信息为 `content: …`）→ 推送 → 等待并报告部署结果。负责失败时停止并说明原因，并把「推送成功」与「上线完成」分开报告。**不负责**：内容规则（委托给 `lib/export.ts`）、部署状态的查询（委托给 `lib/vercel.ts`）。 |
 | `scripts/lib/vercel.ts` | 核实 Vercel 部署 | 通过本机的 `vercel` CLI 按提交哈希查找部署并轮询到终态，返回 ready / failed / timeout / unavailable 四种结果。只查询，不触发部署，也不决定退出码。 |
 | `scripts/vercel.test.ts` | 部署核实逻辑的测试 | 用假的查询函数验证轮询、失败、超时和不可用几种情况，不访问网络。 |
-| `scripts/export.test.ts` | 导出规则的测试 | 用 `fixtures/vault/` 验证正常路径，并在临时目录里生成各类错误样本。只测导出，不测页面和发布命令。 |
+| `scripts/export.test.ts` | 导出规则的测试 | 文件内的 `BASE` 定义了一个最小的模拟库（博客目录、库外附件目录、库外私密笔记），每个测试把它写到系统临时目录后验证正常路径和各类错误。仓库里不保存样本文章。只测导出，不测页面和发布命令。 |
 
 ## 4．`src/`：Astro 站点
 
@@ -90,14 +89,7 @@ ozine-blog/
 | `src/plugins/callout.ts` | Callout 渲染插件 | 构建时把 `> [!type]` 引用块转成提示块的 HTML 结构。只管结构，不管颜色。 |
 | `src/styles/global.css` | 全局样式 | 引入 Tailwind 与排版插件、字体与主题色、正文排版微调、代码高亮的明暗切换、Callout 的外观。 |
 
-## 5．`fixtures/`：测试样本
-
-| 路径 | 作用 | 负责范围 |
-| --- | --- | --- |
-| `fixtures/vault/` | 模拟的最小 Obsidian 库 | 结构与真实库一致：`40 blog/`（博客目录）、`90 system/attachments/`（库外附件）、`30 domain/`（不应公开的私密笔记）、`.obsidian/app.json`（附件目录设置）。供测试和 `npm run sample` 使用，不是真实文章。 |
-| `fixtures/README.md` | 样本说明 | 列出样本覆盖了哪些情况。 |
-
-## 6．根目录配置
+## 5．根目录配置
 
 | 文件 | 作用 | 负责范围 |
 | --- | --- | --- |
@@ -108,7 +100,7 @@ ozine-blog/
 | `.vercel/` | Vercel CLI 的项目关联信息 | 由 `vercel link` 生成，Git 忽略。核实部署时 CLI 靠它知道查哪个项目。 |
 | `.gitignore` | Git 忽略规则 | 忽略 `content` 软链接、`.publish-tmp/`、构建产物、依赖，以及 Vercel CLI 的本地文件（`.vercel/`、`.env*`）。 |
 
-## 7．文档
+## 6．文档
 
 | 文件 | 作用 | 负责范围 |
 | --- | --- | --- |
@@ -118,7 +110,7 @@ ozine-blog/
 | `docs/decisions.md` | 决策与取舍记录 | 每个实现选择：选了什么、放弃了什么、代价是什么。做出或改变决定时更新。 |
 | `docs/architecture.md` | 本文档 | 文件与目录的作用和职责范围。 |
 
-## 8．一次发布中各部分的参与顺序
+## 7．一次发布中各部分的参与顺序
 
 1. `scripts/publish.ts` 检查 Git 状态。
 2. `scripts/lib/export.ts` 读取 `content`，校验并导出到 `.publish-tmp/`。

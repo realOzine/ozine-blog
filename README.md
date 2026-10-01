@@ -55,7 +55,6 @@ redirect_from: old-slug    # 可选：改过 slug 时填旧值
 | `npm run release -- --no-push` | 提交但不推送 |
 | `npm run release -- --no-wait` | 推送后不等待部署结果 |
 | `npm run dev` | 本地预览当前 `published/` 的内容 |
-| `npm run sample` | 用 `fixtures/` 里的样本文章启动本地预览 |
 | `npm run export` | 只导出到 `published/`，不构建、不提交 |
 | `npm test` | 导出规则与部署核实逻辑的测试；单个测试：`node --test --test-name-pattern='重复 slug' scripts/export.test.ts` |
 | `npm run check` | Astro / TypeScript 类型检查 |
@@ -74,7 +73,7 @@ redirect_from: old-slug    # 可选：改过 slug 时填旧值
 | `docs` | 只改文档 |
 | `style` | 只改页面样式或代码格式，不影响行为 |
 | `refactor` | 不改变行为的代码调整 |
-| `test` | 测试与样本 |
+| `test` | 测试 |
 | `chore` | 依赖、配置等杂项 |
 | `content` | 文章内容变更，由 `npm run release` 自动生成，不要手写 |
 

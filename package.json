@@ -27,7 +27,6 @@
     "check": "astro check",
     "test": "node --test 'scripts/**/*.test.ts'",
     "export": "node scripts/export.ts",
-    "release": "node scripts/publish.ts",
-    "sample": "node scripts/export.ts --content 'fixtures/vault/40 blog' --out .publish-tmp && PUBLISHED_DIR=./.publish-tmp astro dev"
+    "release": "node scripts/publish.ts"
   }
 }

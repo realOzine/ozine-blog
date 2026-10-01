@@ -12,7 +12,6 @@ Personal blog: Astro 7 + TypeScript + Tailwind CSS 4. Articles are written in Ob
 
 ```sh
 npm run dev                       # preview whatever is in published/
-npm run sample                    # export fixtures/ to .publish-tmp and preview that (use this to see real content)
 npm test                          # export + deploy-verification tests (node:test)
 node --test --test-name-pattern='重复 slug' scripts/export.test.ts   # single test
 npm run check                     # astro check (types)
@@ -56,4 +55,4 @@ Things that are easy to get wrong:
 - Adding a public frontmatter field means changing both `publicFrontmatter()` in the export script and the schema in `src/content.config.ts`.
 - Deployment verification (`scripts/lib/vercel.ts`) shells out to the logged-in `vercel` CLI. `vercel ls --meta githubCommitSha=…` does not reliably filter, so results are re-filtered by SHA in code — keep that filter, or a previous deployment's READY gets reported as this release going live.
 - `published/` is program-owned. Don't hand-edit it; `release` commits only that path and refuses to run with other staged changes.
-- `fixtures/vault/` is a miniature vault mirroring the real layout; error cases are generated inside `scripts/export.test.ts`. Never write test content into the user's Obsidian vault.
+- The export tests build a miniature vault (the `BASE` map in `scripts/export.test.ts`, mirroring the real layout) in the OS temp dir for each test. There are no sample articles in the repo — don't add a fixtures directory back. Never write test content into the user's Obsidian vault.
