@@ -48,7 +48,7 @@ Obsidian syntax is handled in two places on purpose:
 Things that are easy to get wrong:
 
 - Markdown is processed by **Sätteri** (Astro 7's default), not remark/rehype. Plugins are Sätteri mdast/hast visitor objects passed to `satteri()` in `astro.config.mjs`; remark/rehype plugins will not work.
-- Heading anchors in the export script are computed with `github-slugger` to match the ids Astro generates. Keep the two in sync.
+- Heading anchors are not parsed by hand: the exporter renders each published note with the same Sätteri processor Astro uses (`createSatteriMarkdownProcessor` in `scripts/lib/export.ts`) and takes its heading ids. If you pass `features` to `satteri()` in `astro.config.mjs`, pass the same ones there, or anchors and page ids drift apart. `exportContent` is async because of this.
 - Code blocks use Shiki with `defaultColor: false`: tokens carry only `--shiki-light` / `--shiki-dark` variables and `global.css` picks one with `light-dark()`. Without that CSS rule code is uncoloured.
 - Attachments live outside the content folder (`90 system/attachments` in the real vault). The exporter finds the vault root by walking up from the symlink's real path to `.obsidian`. Only image extensions, only files referenced by published posts, only paths inside the vault — these limits are privacy guards, don't loosen them casually.
 - `PUBLISHED_DIR` env var (defined once in `src/lib/published.ts`) redirects both the content collection and the redirects lookup; `release` uses it to build against `.publish-tmp/` before replacing `published/`. `release` skips the build when the export is identical to the committed `published/`; `--dry-run` always builds.

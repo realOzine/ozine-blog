@@ -4,7 +4,8 @@
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
-import GithubSlugger from 'github-slugger'
+import { createSatteriMarkdownProcessor } from '@astrojs/markdown-satteri'
+import { slug as slugify } from 'github-slugger'
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
 
 const STATUSES = ['draft', 'published', 'withdrawn'] as const
@@ -37,7 +38,11 @@ export interface ExportResult {
   skipped: { draft: number; withdrawn: number }
 }
 
+type RenderMarkdown = Awaited<ReturnType<typeof createSatteriMarkdownProcessor>>['render']
+
 interface Heading {
+  /** 用于匹配 `[[文章#标题]]`：忽略大小写、标点和强调标记 */
+  key: string
   text: string
   anchor: string
 }
@@ -58,7 +63,7 @@ interface Note {
   headings?: Heading[]
 }
 
-export function exportContent(options: ExportOptions): ExportResult {
+export async function exportContent(options: ExportOptions): Promise<ExportResult> {
   const issues: Issue[] = []
   if (!fs.existsSync(options.contentDir)) {
     issues.push({ file: options.contentDir, message: '内容目录不存在（content 软链接是否已建立？）' })
@@ -82,6 +87,11 @@ export function exportContent(options: ExportOptions): ExportResult {
   }
 
   const redirects = checkSlugs(published, issues)
+
+  // 标题锚点直接取自 Astro 使用的 Markdown 处理器，而不是自己解析，保证与线上的标题 id 一致。
+  // 这里的处理器选项要与 astro.config.mjs 中 satteri() 的 features 保持一致（目前都是默认值）。
+  const { render } = await createSatteriMarkdownProcessor({ syntaxHighlight: false })
+  await Promise.all(published.map((note) => readHeadings(note, notes, render)))
 
   const assets = new AssetRegistry(contentRoot, findVaultRoot(contentRoot))
   const outputs = published.map((note) => {
@@ -250,44 +260,110 @@ function findNotes(notes: Note[], target: string): Note[] {
   })
 }
 
-/** 逐行调用；当前行是代码围栏的起止行或位于围栏内时返回 true。 */
+/**
+ * 逐行调用；当前行是代码围栏的起止行或位于围栏内时返回 true。
+ * 按 CommonMark：结束围栏必须与开始围栏同字符、长度不短于它，且后面没有其它内容。
+ */
 function fenceTracker(): (line: string) => boolean {
-  let fence: string | undefined
+  let open: string | undefined
   return (line) => {
-    const match = /^\s*(?:>\s*)*(`{3,}|~{3,})/.exec(line)
-    if (!match) return fence !== undefined
-    if (!fence) fence = match[1][0]
-    else if (match[1][0] === fence) fence = undefined
+    const match = /^\s*(?:>\s*)*(`{3,}|~{3,})(.*)$/.exec(line)
+    if (!match) return open !== undefined
+    const [, marks, rest] = match
+    if (!open) open = marks
+    else if (marks[0] === open[0] && marks.length >= open.length && rest.trim() === '') open = undefined
     return true
   }
 }
 
-function headingsOf(note: Note): Heading[] {
-  if (note.headings) return note.headings
-  // 与 Astro 生成标题 id 的方式保持一致：同一篇内按出现顺序用 github-slugger 去重。
-  const slugger = new GithubSlugger()
-  const headings: Heading[] = []
+/**
+ * 逐行处理正文：代码围栏与行内代码原样保留，去掉 %%注释%%，其余文字交给 mapText。
+ * 正文转换与标题提取共用这一遍扫描，两者看到的是同一份「可见文字」。
+ */
+function mapBody(body: string, mapText: (text: string, lineIndex: number) => string): string {
   const inCode = fenceTracker()
-  for (const line of note.body.split('\n')) {
-    if (inCode(line)) continue
-    const match = /^#{1,6}\s+(.+?)\s*#*\s*$/.exec(line)
-    if (!match) continue
-    const text = plainText(match[1])
-    headings.push({ text, anchor: slugger.slug(text) })
-  }
-  return (note.headings = headings)
+  let inComment = false
+
+  return body
+    .split('\n')
+    .map((line, index) => {
+      if (!inComment && inCode(line)) return line
+
+      // 把一行切成「行内代码」和「其余文字」。双链整体算作文字，即使里面带反引号（`[[文章#`code` 标题]]`）。
+      const parts = line.split(/(!?\[\[[^\]\n]+?\]\]|(`+)[^`]*?\2)/)
+      let text = ''
+      let segment = ''
+      const flush = () => {
+        text += mapText(segment, index)
+        segment = ''
+      }
+      for (let i = 0; i < parts.length; i += 3) {
+        for (const [j, piece] of parts[i].split('%%').entries()) {
+          if (j > 0) inComment = !inComment
+          if (!inComment) segment += piece
+        }
+        const token = parts[i + 1]
+        if (token === undefined || inComment) continue
+        if (parts[i + 2] === undefined) segment += token
+        else {
+          flush()
+          text += token
+        }
+      }
+      flush()
+      return text
+    })
+    .join('\n')
 }
 
-/** 标题的纯文本：去掉双链、链接和强调标记，近似渲染后的文字。 */
-function plainText(markdown: string): string {
-  return markdown
-    .replace(/!?\[\[([^\]]+)\]\]/g, (_, inner: string) => {
-      const [target, alias] = splitAlias(inner)
-      return alias ?? target
-    })
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/`|\*\*|\*|~~|==/g, '')
-    .trim()
+interface LinkParts {
+  /** 目标文章；空字符串表示本篇 */
+  name: string
+  heading?: string
+  alias?: string
+}
+
+function parseLink(inner: string): LinkParts {
+  const [targetPart, alias] = splitAlias(inner)
+  const hashIndex = targetPart.indexOf('#')
+  if (hashIndex === -1) return { name: targetPart.trim(), alias }
+  return { name: targetPart.slice(0, hashIndex).trim(), heading: targetPart.slice(hashIndex + 1).trim(), alias }
+}
+
+/** 双链的显示文字：别名 > 标题锚点 > 目标文章的 title（而不是文件名，文件名是私有的组织方式）。 */
+function linkLabel(link: LinkParts, target: Note, headingText: string | undefined): string {
+  const title = String(target.data.title)
+  const label = link.alias ?? (link.name === '' ? (headingText ?? title) : headingText ? `${title} › ${headingText}` : title)
+  return label.replace(/[[\]]/g, '\\$&')
+}
+
+function headingKey(text: string): string {
+  // github-slugger 会去掉 `*`、反引号等标点但保留下划线，这里一并去掉，让 `_强调_` 也能匹配。
+  return slugify(text.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')).replace(/_/g, '')
+}
+
+/**
+ * 提取一篇文章渲染后的标题及其 id。
+ * 输入必须与公开副本「看起来一样」：注释已删除，标题里的双链已换成显示文字。
+ * 此时其它文章的标题还未就绪，所以带锚点的双链先用链接里写的标题文字，只影响极少见的「标题里链接到另一个标题」。
+ */
+async function readHeadings(note: Note, notes: Note[], render: RenderMarkdown): Promise<void> {
+  const source = mapBody(note.body, (text) =>
+    text.replace(/(!?)\[\[([^\]\n]+?)\]\]/g, (original, bang: string, inner: string) => {
+      if (bang) return `![${imageAlt(splitAlias(inner)[1])}](x)`
+      const link = parseLink(inner)
+      const matches = link.name === '' ? [note] : findNotes(notes, link.name)
+      // 无法解析的双链会在正文转换时报错，这里保持原样即可。
+      return matches.length === 1 && matches[0].publishable ? linkLabel(link, matches[0], link.heading) : original
+    }),
+  )
+  const { metadata } = await render(source)
+  note.headings = metadata.headings.map(({ text, slug }) => ({ text: text.trim(), anchor: slug, key: headingKey(text) }))
+}
+
+/** `![[a.png|300]]` 的尺寸在首版被忽略；非数字别名作为替代文字。 */
+function imageAlt(alias: string | undefined): string {
+  return alias && !/^\d+(x\d+)?$/.test(alias) ? alias : ''
 }
 
 function splitAlias(inner: string): [string, string | undefined] {
@@ -402,29 +478,7 @@ const INLINE_RE =
   /!\[\[([^\]\n]+?)\]\]|\[\[([^\]\n]+?)\]\]|!\[([^\]]*)\]\((<[^>\n]+>|[^)\s]+)(\s+"[^"]*")?\)|(?<!!)\[[^\]]*\]\(([^)\s]+)\)/g
 
 function transformBody(note: Note, ctx: TransformContext): string {
-  const inCode = fenceTracker()
-  let inComment = false
-
-  return note.body
-    .split('\n')
-    .map((line, index) => {
-      if (!inComment && inCode(line)) return line
-
-      // 行内代码原样保留，其余片段去掉 %%注释%% 后再转换。
-      const parts = line.split(/((`+)[^`]*?\2)/)
-      let text = ''
-      for (let i = 0; i < parts.length; i += 3) {
-        let segment = ''
-        for (const [j, piece] of parts[i].split('%%').entries()) {
-          if (j > 0) inComment = !inComment
-          if (!inComment) segment += piece
-        }
-        text += transformInline(segment, note, note.bodyLine + index, ctx)
-        if (parts[i + 1] !== undefined && !inComment) text += parts[i + 1]
-      }
-      return text
-    })
-    .join('\n')
+  return mapBody(note.body, (text, index) => transformInline(text, note, note.bodyLine + index, ctx))
 }
 
 function transformInline(text: string, note: Note, line: number, ctx: TransformContext): string {
@@ -442,8 +496,7 @@ function transformInline(text: string, note: Note, line: number, ctx: TransformC
     if (embed !== undefined) {
       const [target, alias] = splitAlias(embed)
       if (!isImage(target)) return fail(`不支持嵌入「${target}」：首版只支持 ![[图片]]，不支持笔记嵌入`)
-      // `![[a.png|300]]` 的尺寸在首版被忽略；非数字别名作为替代文字。
-      return image(target, alias && !/^\d+(x\d+)?$/.test(alias) ? alias : '')
+      return image(target, imageAlt(alias))
     }
 
     if (link !== undefined) return wikilink(link, note, ctx.notes, fail)
@@ -457,10 +510,8 @@ function transformInline(text: string, note: Note, line: number, ctx: TransformC
 }
 
 function wikilink(inner: string, note: Note, notes: Note[], fail: (message: string) => string): string {
-  const [targetPart, alias] = splitAlias(inner)
-  const hashIndex = targetPart.indexOf('#')
-  const name = (hashIndex === -1 ? targetPart : targetPart.slice(0, hashIndex)).trim()
-  const heading = hashIndex === -1 ? undefined : targetPart.slice(hashIndex + 1).trim()
+  const link = parseLink(inner)
+  const { name, heading } = link
 
   if (heading?.startsWith('^')) return fail(`不支持块引用「[[${inner}]]」`)
 
@@ -477,18 +528,17 @@ function wikilink(inner: string, note: Note, notes: Note[], fail: (message: stri
     }
   }
 
-  let anchor = ''
+  let found: Heading | undefined
   if (heading) {
-    const wanted = plainText(heading).toLowerCase()
-    const found = headingsOf(target).find((h) => h.text.toLowerCase() === wanted)
+    const key = headingKey(heading)
+    found = target.headings?.find((h) => h.key === key)
     if (!found) return fail(`双链「[[${inner}]]」：${target.file} 中找不到标题「${heading}」`)
-    anchor = `#${found.anchor}`
   }
 
-  // 显示文字：别名 > 标题锚点 > 目标文章的 title（而不是文件名，文件名是私有的组织方式）。
-  const label = alias ?? (name === '' ? heading! : heading ? `${target.data.title} › ${heading}` : target.data.title)
+  const anchor = found ? `#${found.anchor}` : ''
   const url = name === '' ? anchor : `/posts/${target.data.slug}/${anchor}`
-  return `[${String(label).replace(/[[\]]/g, '\\$&')}](${url})`
+  // 显示文字用标题渲染后的文字，而不是链接里写的原文（可能带 `**`、大小写也可能不同）。
+  return `[${linkLabel(link, target, found?.text)}](${url})`
 }
 
 function safeDecode(value: string): string {

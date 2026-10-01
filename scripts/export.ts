@@ -9,7 +9,7 @@ const { values } = parseArgs({
   },
 })
 
-const result = exportContent({ contentDir: values.content, outDir: values.out })
+const result = await exportContent({ contentDir: values.content, outDir: values.out })
 if (result.issues.length > 0) {
   console.error(formatIssues(result.issues))
   console.error('\n未写入任何文件。')

@@ -50,7 +50,7 @@ ozine-blog/
 
 | 文件 | 作用 | 负责范围 |
 | --- | --- | --- |
-| `scripts/lib/export.ts` | 导出的核心逻辑 | 读取原稿、解析并校验 frontmatter、按 `status` 筛选、检查 `slug` 与 `redirect_from` 唯一性、解析双链与标题锚点、查找并登记附件、删除 `%%注释%%`、输出公开副本。所有问题收集为带文件和行号的 `Issue`，有任何问题就不写文件。**不负责**：构建网站、Git 操作、Callout 渲染。 |
+| `scripts/lib/export.ts` | 导出的核心逻辑 | 读取原稿、解析并校验 frontmatter、按 `status` 筛选、检查 `slug` 与 `redirect_from` 唯一性、解析双链、用 Astro 的 Markdown 处理器取得标题锚点、查找并登记附件、删除 `%%注释%%`、输出公开副本。所有问题收集为带文件和行号的 `Issue`，有任何问题就不写文件。**不负责**：构建网站、Git 操作、Callout 渲染。 |
 | `scripts/export.ts` | `npm run export` 的命令行入口 | 解析参数、调用核心逻辑、打印结果。不含业务规则，输出文字的格式也由核心逻辑提供。 |
 | `scripts/publish.ts` | `npm run release` 的命令行入口 | 串联发布流程：检查 Git 状态 → 导出到 `.publish-tmp/`（与已提交的 `published/` 完全一致时到此结束）→ 用临时副本构建 → 替换 `published/` → 只提交 `published/`（提交信息为 `content: …`）→ 推送 → 等待并报告部署结果。负责失败时停止并说明原因，并把「推送成功」与「上线完成」分开报告。**不负责**：内容规则（委托给 `lib/export.ts`）、部署状态的查询（委托给 `lib/vercel.ts`）。 |
 | `scripts/lib/vercel.ts` | 核实 Vercel 部署 | 通过本机的 `vercel` CLI 按提交哈希查找部署并轮询到终态，返回 ready / failed / timeout / unavailable 四种结果。只查询，不触发部署，也不决定退出码。 |

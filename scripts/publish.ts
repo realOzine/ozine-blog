@@ -67,7 +67,7 @@ if (dirty) {
 // ---------- 2. 校验并导出到临时目录 ----------
 
 step('校验并导出内容')
-const result = exportContent({ contentDir: path.resolve(root, args.content), outDir: tmpDir })
+const result = await exportContent({ contentDir: path.resolve(root, args.content), outDir: tmpDir })
 if (result.issues.length > 0) {
   console.error(indent(formatIssues(result.issues)))
   fail('内容校验未通过，没有改动 published/，也没有提交或推送。')
