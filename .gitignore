@@ -9,3 +9,5 @@ dist/
 
 # 发布命令的临时导出目录
 /.publish-tmp/
+.vercel
+.env*

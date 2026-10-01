@@ -105,7 +105,8 @@
 ### D15 只报告「推送成功」，不核实 Vercel 部署
 
 - 本机没有 `vercel`、`gh` CLI，也还没有 Vercel 项目，无法查询部署结果。命令明确输出「部署状态未核实」。
-- **后续**：项目建好后可用 Vercel API 轮询部署状态，补上「上线完成」的报告。
+- **现状（2026-10-01）**：`gh` 与 `vercel` CLI 已安装，Vercel 项目 `ozine-blog` 已创建并关联 GitHub 仓库，推送 `main` 会自动部署到 <https://ozine-blog.vercel.app>。发布命令本身仍不核实部署结果。
+- **后续**：可在发布命令末尾用 `vercel` CLI 或 API 轮询部署状态，补上「上线完成」的报告。
 
 ### D16 脚本用 Node 原生运行 TypeScript，不引入 tsx 等运行器
 
@@ -156,4 +157,4 @@
 
 - 如何处理 `40 blog/index.md`（D3）。
 - 站点名称、简介、关于页内容、视觉风格（D19）。
-- GitHub 仓库、Vercel 项目与域名（D15、D20）。本次没有创建仓库、没有提交、没有部署。
+- 自定义域名（D20）。目前使用 Vercel 默认域名 `ozine-blog.vercel.app`，`astro.config.mjs` 尚未配置 `site`。
