@@ -1,0 +1,15 @@
+---
+import Base from '../layouts/Base.astro'
+import { site } from '../site.config'
+---
+
+<Base title="关于">
+  <article class="prose prose-stone max-w-none py-6 dark:prose-invert">
+    <h1>关于</h1>
+    <!-- 占位内容：正文直接写在这里 -->
+    <p>我是 {site.title}。这个博客用来存放那些准备向别人讲清楚的文章。</p>
+    <p>
+      文章在 Obsidian 中写作，通过一条发布命令导出为公开副本，再由 Astro 生成静态页面。
+    </p>
+  </article>
+</Base>

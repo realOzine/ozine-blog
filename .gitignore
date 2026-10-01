@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.astro/
+.vercel/
+.DS_Store
+
+# 本地内容入口：指向 Obsidian 博客目录的软链接，不进入公开仓库
+/content
+
+# 发布命令的临时导出目录
+/.publish-tmp/

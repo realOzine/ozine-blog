@@ -1,0 +1,33 @@
+{
+  "name": "ozine-blog",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=22.18"
+  },
+  "dependencies": {
+    "@astrojs/markdown-satteri": "^0.4.2",
+    "@tailwindcss/typography": "^0.5.20",
+    "@tailwindcss/vite": "^4.3.3",
+    "astro": "^7.3.5",
+    "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@types/node": "^26.6.3",
+    "github-slugger": "^2.0.0",
+    "typescript": "^6.0.3",
+    "yaml": "^2.9.1"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "test": "node --test 'scripts/**/*.test.ts'",
+    "export": "node scripts/export.ts",
+    "release": "node scripts/publish.ts",
+    "sample": "node scripts/export.ts --content 'fixtures/vault/40 blog' --out .publish-tmp && PUBLISHED_DIR=./.publish-tmp astro dev"
+  }
+}
