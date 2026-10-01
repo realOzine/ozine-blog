@@ -24,6 +24,16 @@ npm run release                   # full publish: also replaces published/, comm
 
 Scripts run as TypeScript directly on Node (type stripping, Node ≥ 22.18): use `.ts` import extensions and erasable syntax only (no enums / parameter properties). TypeScript is pinned to 6.x because `@astrojs/check` does not accept 7.
 
+## Commit messages
+
+Conventional Commits with a Chinese summary: `<type>(<scope>): <中文说明>`.
+
+- type: `feat` `fix` `docs` `style` `refactor` `test` `chore` `content`
+- scope (optional): `export` | `site` | `publish`
+- `content` is reserved for commits that only change `published/`; `npm run release` generates these itself (`content: 新增 1、更新 0、移除 0 篇文章`). Don't write them by hand.
+
+Examples: `feat(export): 支持 PDF 附件导出`, `fix(site): 修正手机端目录折叠后的间距`, `docs: 新增 architecture.md`.
+
 ## Architecture
 
 Two halves joined by the `published/` directory:

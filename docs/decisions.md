@@ -142,7 +142,17 @@
 
 - 最新的 TypeScript 7 与 `@astrojs/check` 的 peer 依赖（`^5 || ^6`）冲突。
 
-## 5．仍待你决定
+## 5．协作约定
+
+### D22 提交信息：Conventional Commits + 中文说明
+
+- **选择**：`<type>(<scope>): <中文说明>`，type 为 `feat` `fix` `docs` `style` `refactor` `test` `chore` `content`，scope 为 `export` / `site` / `publish`（可省略）。发布命令的自动提交使用 `content:`。
+- **放弃**：全英文的 Conventional Commits（公开仓库更常见，但与项目的中文文档和报错不一致）；只按模块加前缀（规则少，但看不出改动性质）；纯中文前缀（不兼容现成工具）。
+- **得**：类型关键字与 changelog 等工具兼容；文章发布与代码改动在历史里一眼可分。
+- **失**：`content` 不是 Conventional Commits 的标准类型，严格的校验工具需要额外配置；中英混排。
+- 定下规范时仓库尚未推送，已有的 3 个提交已按新规范改写。
+
+## 6．仍待你决定
 
 - 如何处理 `40 blog/index.md`（D3）。
 - 站点名称、简介、关于页内容、视觉风格（D19）。

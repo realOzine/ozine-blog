@@ -53,7 +53,7 @@ ozine-blog/
 | --- | --- | --- |
 | `scripts/lib/export.ts` | 导出的核心逻辑 | 读取原稿、解析并校验 frontmatter、按 `status` 筛选、检查 `slug` 与 `redirect_from` 唯一性、解析双链与标题锚点、查找并登记附件、删除 `%%注释%%`、输出公开副本。所有问题收集为带文件和行号的 `Issue`，有任何问题就不写文件。**不负责**：构建网站、Git 操作、Callout 渲染。 |
 | `scripts/export.ts` | `npm run export` 的命令行入口 | 解析参数、调用核心逻辑、打印结果。不含业务规则。 |
-| `scripts/publish.ts` | `npm run release` 的命令行入口 | 串联发布流程：检查 Git 状态 → 导出到 `.publish-tmp/` → 用临时副本构建 → 替换 `published/` → 只提交 `published/` → 推送。负责失败时停止并说明原因。**不负责**：内容规则（全部委托给 `lib/export.ts`）、核实 Vercel 部署结果。 |
+| `scripts/publish.ts` | `npm run release` 的命令行入口 | 串联发布流程：检查 Git 状态 → 导出到 `.publish-tmp/` → 用临时副本构建 → 替换 `published/` → 只提交 `published/`（提交信息为 `content: …`）→ 推送。负责失败时停止并说明原因。**不负责**：内容规则（全部委托给 `lib/export.ts`）、核实 Vercel 部署结果。 |
 | `scripts/export.test.ts` | 导出规则的测试 | 用 `fixtures/vault/` 验证正常路径，并在临时目录里生成各类错误样本。只测导出，不测页面和发布命令。 |
 
 ## 4．`src/`：Astro 站点
@@ -109,8 +109,8 @@ ozine-blog/
 
 | 文件 | 作用 | 负责范围 |
 | --- | --- | --- |
-| `README.md` | 使用说明 | 首次设置、文章 frontmatter 写法、常用命令。 |
-| `CLAUDE.md` | 给 Claude Code 的工作指引 | 命令、架构要点、容易出错的地方、文档维护规则。 |
+| `README.md` | 使用说明 | 首次设置、文章 frontmatter 写法、常用命令、提交信息规范。 |
+| `CLAUDE.md` | 给 Claude Code 的工作指引 | 命令、提交信息规范、架构要点、容易出错的地方、文档维护规则。 |
 | `docs/plan.md` | 最初的项目规划 | 目标、范围、验收标准。作为历史记录保留，实现与它不一致之处记在 `docs/decisions.md`。 |
 | `docs/decisions.md` | 决策与取舍记录 | 每个实现选择：选了什么、放弃了什么、代价是什么。做出或改变决定时更新。 |
 | `docs/architecture.md` | 本文档 | 文件与目录的作用和职责范围。 |

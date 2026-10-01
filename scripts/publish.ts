@@ -105,7 +105,7 @@ console.log(changes.split('\n').map((line) => `  ${line}`).join('\n'))
 step('提交')
 const count = (status: string) =>
   changes.split('\n').filter((line) => line.startsWith(status) && line.includes('published/posts/')).length
-const message = `publish: 新增 ${count('A')}、更新 ${count('M')}、移除 ${count('D')} 篇文章`
+const message = `content: 新增 ${count('A')}、更新 ${count('M')}、移除 ${count('D')} 篇文章`
 const commit = git('commit', '-m', message, '--', 'published')
 if (!commit.ok) fail(`提交失败：\n${commit.stderr || commit.stdout}`)
 console.log(`  ${message}`)

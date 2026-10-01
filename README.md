@@ -61,3 +61,26 @@ redirect_from: old-slug    # 可选：改过 slug 时填旧值
 | `npm run build` | 构建到 `dist/` |
 
 发布命令只提交 `published/`；站点代码的改动需要自己提交。推送成功不等于部署成功，需到 Vercel 确认。
+
+## 提交信息
+
+格式：`<type>(<scope>): <中文说明>`，scope 可省略。
+
+| type | 用途 |
+| --- | --- |
+| `feat` | 新功能 |
+| `fix` | 修复问题 |
+| `docs` | 只改文档 |
+| `style` | 只改页面样式或代码格式，不影响行为 |
+| `refactor` | 不改变行为的代码调整 |
+| `test` | 测试与样本 |
+| `chore` | 依赖、配置等杂项 |
+| `content` | 文章内容变更，由 `npm run release` 自动生成，不要手写 |
+
+scope 取 `export`（导出规则）、`site`（页面与样式）、`publish`（发布流程）之一。例如：
+
+```text
+feat(export): 支持 PDF 附件导出
+fix(site): 修正手机端目录折叠后的间距
+docs: 新增 architecture.md
+```
