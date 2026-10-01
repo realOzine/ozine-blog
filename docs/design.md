@@ -98,13 +98,14 @@ Shiki 双主题：亮色 `github-light`、暗色 `github-dark`（在 `astro.conf
 | 用途 | token | 字体 | 来源 |
 | --- | --- | --- | --- |
 | 正文、界面文字 | `--font-body`（`font-body`） | 霞鹜文楷屏幕阅读版（LXGW WenKai Screen），后备为系统楷体、系统黑体 | npm 包 `lxgw-wenkai-screen-web`，随站点一起部署 |
-| 标题、站名 | `--font-serif`（`font-serif`） | 西文用系统衬线体（Iowan Old Style、Palatino、Georgia），中文用思源宋体（Noto Serif SC）600 | npm 包 `@fontsource/noto-serif-sc`，随站点一起部署 |
+| 标题 | `--font-serif`（`font-serif`） | 西文用系统衬线体（Iowan Old Style、Palatino、Georgia），中文用思源宋体（Noto Serif SC）600 | npm 包 `@fontsource/noto-serif-sc`，随站点一起部署 |
+| 顶栏站名 | `--font-script`（`font-script`） | Great Vibes（英文花体），后备为系统花体（Snell Roundhand、Apple Chancery） | npm 包 `@fontsource/great-vibes`，只引入拉丁字母一个分片，随站点一起部署 |
 | 代码 | `--font-mono`（`font-mono`） | 系统等宽字体 | 系统自带 |
 
 - 两款中文字体都按 `unicode-range` 切成上百个分片，浏览器只下载页面上实际用到的字所在的分片；字体没到时先显示后备字体（`font-display: swap`）。两份字体样式表在 `src/layouts/Base.astro` 里引入，作为单独的文件放在 `<body>` 末尾，不并进主样式表：它们的 `@font-face` 列表有三百多 KB，并进去会挡住首屏渲染。
 - 霞鹜文楷字面偏小，所以根字号是 106.25%（17px），全站按这个比例放大。
 - 霞鹜文楷的分片包只有常规字重，正文里的粗体由浏览器合成。标题因此另配了有真实 600 字重的宋体，只加载 600 这一个字重——标题一律用 `font-semibold`，不要用别的字重。
-- 站名按 logo 的字标样式排：衬线体、全小写、字距 0.32em，前面一颗装饰紫的星。
+- 顶栏站名用花体 Great Vibes：按 `site.title` 的原样大小写显示（首字母大写的花体 O 是重点），字号 `text-3xl`，不加字距——花体的笔画要连起来，加了字距会断开。前面仍是一颗装饰紫的星。花体只用在这一处：它只有拉丁字母，小字号下也不好认，正文、标题、页脚都不要用。
 
 ## 4．角色与图片
 

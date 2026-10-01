@@ -81,7 +81,7 @@ ozine-blog/
 
 | 文件 | 作用 | 负责范围 |
 | --- | --- | --- |
-| `src/layouts/Base.astro` | 所有页面共用的外壳 | `<head>`（含网站图标）、顶栏（站名与 GitHub 图标，没有导航菜单）、页脚、页面宽度、右下角的看板娘。引入全局样式和 Vercel 访问统计组件（`@vercel/analytics`），并在 `<body>` 末尾单独链接两款中文字体的样式表（不挡首屏渲染），因此它们对所有页面生效。 |
+| `src/layouts/Base.astro` | 所有页面共用的外壳 | `<head>`（含网站图标）、顶栏（站名与 GitHub 图标，没有导航菜单）、页脚、页面宽度、右下角的看板娘。引入全局样式和 Vercel 访问统计组件（`@vercel/analytics`），引入站名用的花体（并进主样式表），并在 `<body>` 末尾单独链接两款中文字体的样式表（不挡首屏渲染），因此它们对所有页面生效。 |
 | `src/components/PostList.astro` | 文章列表 | 首页使用。含条目的悬停动效和滚动进入视口时的浮现。 |
 | `src/components/Tags.astro` | 标签组 | 文章详情页用它显示这篇文章的标签。只是文字，不是链接（站点没有标签页）。 |
 | `src/components/Toc.astro` | 文章目录 | 渲染二、三级标题的链接；显示位置由文章详情页决定。 |
@@ -93,7 +93,7 @@ ozine-blog/
 | 文件 | 作用 | 负责范围 |
 | --- | --- | --- |
 | `astro.config.mjs` | Astro 配置 | 网址末尾斜杠、读取重定向表、Markdown 处理器与 Callout 插件、代码高亮主题、接入 Tailwind、禁止把字体分片内联进样式表。公开副本目录取自 `src/lib/published.ts`。 |
-| `package.json` | 依赖与命令 | 所有 `npm run` 命令的定义。依赖里的 `lxgw-wenkai-screen-web` 和 `@fontsource/noto-serif-sc` 是随站点部署的中文字体；开发依赖里的 `sharp` 供 `pic/cut-character.mjs` 使用。 |
+| `package.json` | 依赖与命令 | 所有 `npm run` 命令的定义。依赖里的 `lxgw-wenkai-screen-web` 和 `@fontsource/noto-serif-sc` 是随站点部署的中文字体，`@fontsource/great-vibes` 是顶栏站名用的英文花体；开发依赖里的 `sharp` 供 `pic/cut-character.mjs` 使用。 |
 | `package-lock.json` | 依赖版本锁定 | 由 npm 维护。 |
 | `tsconfig.json` | TypeScript 配置 | 继承 Astro 严格模式；允许脚本用 `.ts` 扩展名互相导入。 |
 | `.vercel/` | Vercel CLI 的项目关联信息 | 由 `vercel link` 生成，Git 忽略。核实部署时 CLI 靠它知道查哪个项目。 |

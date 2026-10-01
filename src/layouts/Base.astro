@@ -6,6 +6,8 @@ import '../styles/global.css'
 // 它们的 @font-face 列表有三百多 KB，所以不并进主样式表，而是作为单独的样式表放在 <body> 末尾，不挡住首屏渲染。
 import wenkaiCss from 'lxgw-wenkai-screen-web/lxgwwenkaiscreen/result.css?url'
 import serifCss from '@fontsource/noto-serif-sc/600.css?url'
+// 站名用的花体只有拉丁字母一个分片（约 20 KB），样式表只有一条 @font-face，直接并进主样式表。
+import '@fontsource/great-vibes/latin-400.css'
 import character from '../../pic/character.png'
 import favicon from '../../pic/favicon.svg?url'
 import { site } from '../site.config'
@@ -38,9 +40,9 @@ const mascotFrom = wide ? 'min-[88rem]:block' : 'min-[72rem]:block'
   <body class="flex min-h-screen flex-col bg-page font-body text-body antialiased">
     <header class={`mx-auto w-full px-5 ${width}`}>
       <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-line py-6">
-        <a href="/" class="group flex items-center gap-2.5 font-serif text-xl tracking-[0.32em] text-heading lowercase">
+        <a href="/" class="group flex items-center gap-2.5 font-script text-3xl leading-none text-heading">
           <span
-            class="twinkle text-base tracking-normal text-deco transition-[rotate] duration-700 ease-out motion-safe:group-hover:rotate-180"
+            class="twinkle font-serif text-base text-deco transition-[rotate] duration-700 ease-out motion-safe:group-hover:rotate-180"
             aria-hidden="true">✦</span
           >{site.title}
         </a>

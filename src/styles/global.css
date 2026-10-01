@@ -10,6 +10,8 @@
     "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
   --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Noto Serif SC", "Songti SC",
     "Noto Serif CJK SC", "Source Han Serif SC", serif;
+  /* 花体：只用于顶栏站名，不用于正文和标题 */
+  --font-script: "Great Vibes", "Snell Roundhand", "Apple Chancery", cursive;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
   --color-page: light-dark(#faf9fc, #16141c);
