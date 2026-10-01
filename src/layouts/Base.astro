@@ -1,4 +1,5 @@
 ---
+import Analytics from '@vercel/analytics/astro'
 import '../styles/global.css'
 import { site } from '../site.config'
 
@@ -23,6 +24,7 @@ const width = wide ? 'max-w-5xl' : 'max-w-3xl'
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
+    <Analytics />
   </head>
   <body class="flex min-h-screen flex-col bg-stone-50 font-sans text-stone-800 antialiased dark:bg-stone-950 dark:text-stone-200">
     <header class={`mx-auto flex w-full items-baseline justify-between px-5 py-8 ${width}`}>

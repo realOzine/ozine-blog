@@ -126,7 +126,7 @@
 ### D18 样式：Tailwind 4 + `@tailwindcss/typography`
 
 - 正文排版用官方 typography 插件，而不是手写全部正文样式。**失**：默认风格偏英文排版，中文只做了行高和字体栈的调整。
-- 深色模式跟随系统，没有手动切换按钮，全站零客户端 JavaScript。**失**：读者不能自行切换。
+- 深色模式跟随系统，没有手动切换按钮，站点自身不写客户端 JavaScript（唯一的脚本是访问统计，见 D23）。**失**：读者不能自行切换。
 - 字体用系统字体栈，不加载 Web 字体：快，但不同系统观感不一致。
 - 代码高亮用 Astro 内置的 Shiki，`github-light` / `github-dark` 双主题。
 
@@ -155,6 +155,14 @@
 - **得**：类型关键字与 changelog 等工具兼容；文章发布与代码改动在历史里一眼可分。
 - **失**：`content` 不是 Conventional Commits 的标准类型，严格的校验工具需要额外配置；中英混排。
 - 定下规范时仓库尚未推送，已有的 3 个提交已按新规范改写。
+
+### D23 访问统计用 Vercel Web Analytics（`@vercel/analytics`）
+
+- **选择**：在 `src/layouts/Base.astro` 引入官方的 `<Analytics />` 组件，所有页面生效。
+- **放弃**：不做统计；或用 Google Analytics、Plausible、Umami 等第三方或自建方案。
+- **得**：与部署平台一体，零配置；不使用 Cookie，不需要 Cookie 提示；本地开发时不上报。
+- **失**：站点不再是零客户端 JavaScript，每个页面多加载一个小脚本；统计数据绑定在 Vercel 上，换平台带不走；Hobby 套餐有每月事件数上限；带广告拦截的读者不会被统计到。
+- **前提**：需要在 Vercel 项目的 Analytics 页面启用 Web Analytics，否则脚本请求会 404、没有数据。
 
 ## 6．仍待你决定
 

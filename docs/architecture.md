@@ -82,7 +82,7 @@ ozine-blog/
 
 | 文件 | 作用 | 负责范围 |
 | --- | --- | --- |
-| `src/layouts/Base.astro` | 所有页面共用的外壳 | `<head>`、顶部导航、页脚、页面宽度。引入全局样式。 |
+| `src/layouts/Base.astro` | 所有页面共用的外壳 | `<head>`、顶部导航、页脚、页面宽度。引入全局样式和 Vercel 访问统计组件（`@vercel/analytics`），因此统计对所有页面生效。 |
 | `src/components/PostList.astro` | 文章列表 | 首页、文章列表页、标签页共用。 |
 | `src/components/TagLinks.astro` | 标签链接组 | 文章列表页、标签页、文章详情页共用；负责生成标签网址。 |
 | `src/components/Toc.astro` | 文章目录 | 渲染二、三级标题的链接；显示位置由文章详情页决定。 |
