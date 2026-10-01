@@ -2,8 +2,9 @@
 
 用 Astro + TypeScript + Tailwind CSS 搭建的个人博客。文章在 Obsidian 中写作，通过一条发布命令导出为公开副本并推送，由 Vercel 构建部署。
 
-- 规划：[`plan.md`](plan.md)
-- 实现中的选择与取舍：[`DECISIONS.md`](DECISIONS.md)
+- 规划：[`docs/plan.md`](docs/plan.md)
+- 项目结构与各文件职责：[`docs/architecture.md`](docs/architecture.md)
+- 实现中的选择与取舍：[`docs/decisions.md`](docs/decisions.md)
 
 ## 工作方式
 

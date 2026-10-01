@@ -4,8 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Personal blog: Astro 7 + TypeScript + Tailwind CSS 4. Articles are written in Obsidian and exported into this repo by a publish command. Docs, comments and user-facing messages are in Chinese — keep that.
 
-- `plan.md` — the original plan (scope, acceptance criteria).
-- `DECISIONS.md` — every implementation choice and its trade-off. **When you make or change a decision, record it there** (what was chosen, what was given up, the cost).
+- `docs/plan.md` — the original plan (scope, acceptance criteria).
+- `docs/architecture.md` — what every file and directory is for and what it is responsible for. **Standing rule from the user: every change that adds, removes, moves a file or changes a file's responsibility must update this document in the same change.**
+- `docs/decisions.md` — every implementation choice and its trade-off. **When you make or change a decision, record it there** (what was chosen, what was given up, the cost).
 
 ## Commands
 
