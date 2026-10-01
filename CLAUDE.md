@@ -49,8 +49,9 @@ Things that are easy to get wrong:
 
 - Markdown is processed by **Sätteri** (Astro 7's default), not remark/rehype. Plugins are Sätteri mdast/hast visitor objects passed to `satteri()` in `astro.config.mjs`; remark/rehype plugins will not work.
 - Heading anchors in the export script are computed with `github-slugger` to match the ids Astro generates. Keep the two in sync.
+- Code blocks use Shiki with `defaultColor: false`: tokens carry only `--shiki-light` / `--shiki-dark` variables and `global.css` picks one with `light-dark()`. Without that CSS rule code is uncoloured.
 - Attachments live outside the content folder (`90 system/attachments` in the real vault). The exporter finds the vault root by walking up from the symlink's real path to `.obsidian`. Only image extensions, only files referenced by published posts, only paths inside the vault — these limits are privacy guards, don't loosen them casually.
-- `PUBLISHED_DIR` env var redirects both the content collection and the redirects lookup; `release` uses it to build against `.publish-tmp/` before replacing `published/`.
+- `PUBLISHED_DIR` env var (defined once in `src/lib/published.ts`) redirects both the content collection and the redirects lookup; `release` uses it to build against `.publish-tmp/` before replacing `published/`. `release` skips the build when the export is identical to the committed `published/`; `--dry-run` always builds.
 - All pages get posts through `src/lib/posts.ts` (`getPosts` / `getTags`) so the public set is identical everywhere. Tags are grouped case-insensitively.
 - Adding a public frontmatter field means changing both `publicFrontmatter()` in the export script and the schema in `src/content.config.ts`.
 - Deployment verification (`scripts/lib/vercel.ts`) shells out to the logged-in `vercel` CLI. `vercel ls --meta githubCommitSha=…` does not reliably filter, so results are re-filtered by SHA in code — keep that filter, or a previous deployment's READY gets reported as this release going live.

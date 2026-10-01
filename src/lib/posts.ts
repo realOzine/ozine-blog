@@ -19,9 +19,10 @@ export function tagKey(tag: string): string {
   return tag.toLowerCase()
 }
 
-export async function getTags(): Promise<Tag[]> {
+/** 可传入已取得的文章列表，避免同一页面重复查询。 */
+export async function getTags(posts?: Post[]): Promise<Tag[]> {
   const tags = new Map<string, Tag>()
-  for (const post of await getPosts()) {
+  for (const post of posts ?? (await getPosts())) {
     for (const label of post.data.tags) {
       const key = tagKey(label)
       const tag = tags.get(key) ?? { key, label, posts: [] }

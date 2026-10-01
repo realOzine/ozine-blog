@@ -10,7 +10,7 @@ import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { parseArgs } from 'node:util'
-import { exportContent, formatIssue } from './lib/export.ts'
+import { exportContent, formatIssues, formatSummary } from './lib/export.ts'
 import { waitForDeployment } from './lib/vercel.ts'
 
 const { values: args } = parseArgs({
@@ -38,12 +38,15 @@ function run(command: string, commandArgs: string[], options: { env?: NodeJS.Pro
 
 const git = (...gitArgs: string[]) => run('git', gitArgs, { quiet: true })
 
+const indent = (text: string, prefix = '  ') => text.replace(/^/gm, prefix)
+const cleanup = () => fs.rmSync(tmpDir, { recursive: true, force: true })
+
 function step(title: string) {
   console.log(`\n▸ ${title}`)
 }
 
 function fail(message: string): never {
-  fs.rmSync(tmpDir, { recursive: true, force: true })
+  cleanup()
   console.error(`\n✗ ${message}`)
   process.exit(1)
 }
@@ -58,7 +61,7 @@ if (!git('diff', '--cached', '--quiet').ok) {
 const dirty = git('status', '--porcelain', '--', '.', ':!published').stdout
 if (dirty) {
   console.log('  注意：published/ 之外还有未提交的变更，它们不会包含在本次发布里：')
-  console.log(dirty.split('\n').map((line) => `    ${line}`).join('\n'))
+  console.log(indent(dirty, '    '))
 }
 
 // ---------- 2. 校验并导出到临时目录 ----------
@@ -66,24 +69,30 @@ if (dirty) {
 step('校验并导出内容')
 const result = exportContent({ contentDir: path.resolve(root, args.content), outDir: tmpDir })
 if (result.issues.length > 0) {
-  console.error(`  发现 ${result.issues.length} 个问题：\n`)
-  for (const issue of result.issues) console.error(`  ${formatIssue(issue)}`)
+  console.error(indent(formatIssues(result.issues)))
   fail('内容校验未通过，没有改动 published/，也没有提交或推送。')
 }
-console.log(
-  `  ${result.posts.length} 篇文章、${result.assets.length} 个附件` +
-    `（跳过草稿 ${result.skipped.draft} 篇、已撤回 ${result.skipped.withdrawn} 篇）`,
-)
+console.log(`  ${formatSummary(result)}`)
+
+// 导出结果与已提交的 published/ 完全一致时，不必构建。演练时仍然构建，用来检查站点代码。
+const unchanged =
+  git('diff', '--no-index', '--quiet', 'published', '.publish-tmp').ok &&
+  git('status', '--porcelain', '--', 'published').stdout === ''
+if (unchanged && !args['dry-run']) {
+  cleanup()
+  console.log('\n✓ 内容没有变化，无需发布。')
+  process.exit(0)
+}
 
 // ---------- 3. 用临时副本构建网站 ----------
 
 step('构建检查')
-if (!run('npx', ['astro', 'build'], { env: { PUBLISHED_DIR: './.publish-tmp' } }).ok) {
+if (!run('npx', ['astro', 'build'], { env: { PUBLISHED_DIR: tmpDir } }).ok) {
   fail('网站构建失败，没有改动 published/，也没有提交或推送。')
 }
 
 if (args['dry-run']) {
-  fs.rmSync(tmpDir, { recursive: true, force: true })
+  cleanup()
   console.log('\n✓ 演练通过（--dry-run）：未改动 published/，未提交，未推送。')
   process.exit(0)
 }
@@ -96,12 +105,13 @@ fs.rmSync(publishedDir, { recursive: true, force: true })
 fs.renameSync(tmpDir, publishedDir)
 
 git('add', '--all', '--', 'published')
-const changes = git('diff', '--cached', '--name-status', '--', 'published').stdout
+// --no-renames：改 slug 应计为「移除 1、新增 1」，而不是一条不被统计的重命名。
+const changes = git('diff', '--cached', '--name-status', '--no-renames', '--', 'published').stdout
 if (!changes) {
   console.log('\n✓ 内容没有变化，无需发布。')
   process.exit(0)
 }
-console.log(changes.split('\n').map((line) => `  ${line}`).join('\n'))
+console.log(indent(changes))
 
 // ---------- 5. 提交 ----------
 

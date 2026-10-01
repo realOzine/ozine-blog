@@ -12,7 +12,7 @@ const tags = await getTags()
     tags.length === 0 ? (
       <p class="text-stone-500">还没有标签。</p>
     ) : (
-      <TagLinks tags={tags.map((tag) => ({ label: tag.label, count: tag.posts.length }))} />
+      <TagLinks tags={tags} />
     )
   }
 </Base>

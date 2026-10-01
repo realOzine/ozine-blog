@@ -31,7 +31,6 @@ const FAILED_STATES = new Set(['ERROR', 'CANCELED'])
 export async function waitForDeployment(sha: string, options: WaitOptions = {}): Promise<DeployResult> {
   const { list = listWithCli, timeoutMs = 5 * 60_000, intervalMs = 5_000, onProgress } = options
   const deadline = Date.now() + timeoutMs
-  let last: Deployment | undefined
   let lastState = ''
 
   for (;;) {
@@ -42,7 +41,7 @@ export async function waitForDeployment(sha: string, options: WaitOptions = {}):
       return { status: 'unavailable', reason: (error as Error).message }
     }
     // 推送后 Vercel 需要几秒才会创建部署，列表为空时继续等。
-    last = deployments.find((d) => d.target === 'production') ?? deployments[0]
+    const last = deployments.find((d) => d.target === 'production') ?? deployments[0]
     const state = last?.state ?? '等待 Vercel 创建部署'
     if (state !== lastState) onProgress?.(state)
     lastState = state

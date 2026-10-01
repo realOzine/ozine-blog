@@ -7,11 +7,12 @@ import path from 'node:path'
 import GithubSlugger from 'github-slugger'
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
 
-export const STATUSES = ['draft', 'published', 'withdrawn'] as const
-export type Status = (typeof STATUSES)[number]
+const STATUSES = ['draft', 'published', 'withdrawn'] as const
+type Status = (typeof STATUSES)[number]
 
 const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.avif'])
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+const isImage = (name: string) => IMAGE_EXTS.has(path.extname(name).toLowerCase())
 const DATE_RE = /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2})?)?$/
 
 export interface Issue {
@@ -26,13 +27,12 @@ export interface ExportOptions {
   contentDir: string
   /** 输出目录，会被清空后重建 */
   outDir: string
-  /** Obsidian 库根目录；缺省时从内容目录向上查找 `.obsidian` */
-  vaultRoot?: string
 }
 
 export interface ExportResult {
   issues: Issue[]
-  posts: { slug: string; source: string }[]
+  /** 已导出文章的 slug */
+  posts: string[]
   assets: string[]
   skipped: { draft: number; withdrawn: number }
 }
@@ -50,6 +50,8 @@ interface Note {
   body: string
   /** 正文第一行在原文件中的行号 */
   bodyLine: number
+  /** frontmatter 无法解析时的错误信息 */
+  yamlError?: string
   status?: Status
   /** 仅当 status 为 published 且 metadata 全部合法时为 true */
   publishable: boolean
@@ -58,42 +60,43 @@ interface Note {
 
 export function exportContent(options: ExportOptions): ExportResult {
   const issues: Issue[] = []
-  const result: ExportResult = { issues, posts: [], assets: [], skipped: { draft: 0, withdrawn: 0 } }
-
   if (!fs.existsSync(options.contentDir)) {
     issues.push({ file: options.contentDir, message: '内容目录不存在（content 软链接是否已建立？）' })
-    return result
+    return { issues, posts: [], assets: [], skipped: { draft: 0, withdrawn: 0 } }
   }
   // 取真实路径：原稿里的 `../../90 system/attachments/x.webp` 要相对库内的真实位置解析。
   const contentRoot = fs.realpathSync(options.contentDir)
-  const vaultRoot = options.vaultRoot ? fs.realpathSync(options.vaultRoot) : findVaultRoot(contentRoot)
-  const assetBoundary = vaultRoot ?? contentRoot
 
   const notes = walk(contentRoot, (name) => name.endsWith('.md')).map((abs) => readNote(abs, contentRoot))
   for (const note of notes) validateMetadata(note, issues)
 
   const published = notes.filter((n) => n.publishable)
-  result.skipped.draft = notes.filter((n) => n.status === 'draft').length
-  result.skipped.withdrawn = notes.filter((n) => n.status === 'withdrawn').length
+  const result: ExportResult = {
+    issues,
+    posts: [],
+    assets: [],
+    skipped: {
+      draft: notes.filter((n) => n.status === 'draft').length,
+      withdrawn: notes.filter((n) => n.status === 'withdrawn').length,
+    },
+  }
 
   const redirects = checkSlugs(published, issues)
 
-  const noteIndex = new NoteIndex(notes)
-  const assets = new AssetRegistry(contentRoot, vaultRoot, assetBoundary)
-  const outputs: { note: Note; text: string }[] = []
-  for (const note of published) {
-    const body = transformBody(note, { noteIndex, assets, issues })
-    outputs.push({ note, text: `---\n${stringifyYaml(publicFrontmatter(note))}---\n${body}` })
-  }
+  const assets = new AssetRegistry(contentRoot, findVaultRoot(contentRoot))
+  const outputs = published.map((note) => {
+    const body = transformBody(note, { notes, assets, issues })
+    return { slug: note.data.slug as string, text: `---\n${stringifyYaml(publicFrontmatter(note))}---\n${body}` }
+  })
 
   if (issues.length > 0) return result
 
   fs.rmSync(options.outDir, { recursive: true, force: true })
   fs.mkdirSync(path.join(options.outDir, 'posts'), { recursive: true })
   fs.mkdirSync(path.join(options.outDir, 'assets'), { recursive: true })
-  for (const { note, text } of outputs) {
-    fs.writeFileSync(path.join(options.outDir, 'posts', `${note.data.slug}.md`), text)
-    result.posts.push({ slug: note.data.slug as string, source: note.file })
+  for (const { slug, text } of outputs) {
+    fs.writeFileSync(path.join(options.outDir, 'posts', `${slug}.md`), text)
+    result.posts.push(slug)
   }
   for (const [name, src] of assets.entries()) {
     fs.copyFileSync(src, path.join(options.outDir, 'assets', name))
@@ -105,6 +108,15 @@ export function exportContent(options: ExportOptions): ExportResult {
 
 export function formatIssue(issue: Issue): string {
   return `${issue.file}${issue.line ? `:${issue.line}` : ''}  ${issue.message}`
+}
+
+export function formatIssues(issues: Issue[]): string {
+  return [`发现 ${issues.length} 个问题：`, '', ...issues.map((issue) => `  ${formatIssue(issue)}`)].join('\n')
+}
+
+export function formatSummary(result: ExportResult): string {
+  const { posts, assets, skipped } = result
+  return `${posts.length} 篇文章、${assets.length} 个附件（跳过草稿 ${skipped.draft} 篇、已撤回 ${skipped.withdrawn} 篇）`
 }
 
 // ---------- 读取与校验 ----------
@@ -140,7 +152,7 @@ function readNote(abs: string, contentRoot: string): Note {
     const data = parseYaml(match[1])
     if (data && typeof data === 'object' && !Array.isArray(data)) note.data = data
   } catch (error) {
-    note.data = { __yamlError: (error as Error).message.split('\n')[0] }
+    note.yamlError = (error as Error).message.split('\n')[0]
   }
   return note
 }
@@ -150,7 +162,7 @@ function validateMetadata(note: Note, issues: Issue[]): void {
   const report = (message: string) => issues.push({ file: note.file, message })
   const { data } = note
 
-  if (typeof data.__yamlError === 'string') return void report(`frontmatter 不是合法的 YAML：${data.__yamlError}`)
+  if (note.yamlError) return void report(`frontmatter 不是合法的 YAML：${note.yamlError}`)
 
   if (data.status === undefined) return void report(`缺少 status（可选值：${STATUSES.join(' / ')}）`)
   if (!STATUSES.includes(data.status as Status)) {
@@ -194,23 +206,23 @@ function toList(value: unknown): unknown[] | undefined {
 
 /** 检查 slug 与 redirect_from 的全站唯一性，返回「旧地址 → 新地址」表。 */
 function checkSlugs(published: Note[], issues: Issue[]): Record<string, string> {
-  const owners = new Map<string, Note>()
+  // 先登记全部 slug，再登记 redirect_from：两者共用同一个地址空间。
+  const taken = new Map<string, Note>()
   for (const note of published) {
     const slug = note.data.slug as string
-    const other = owners.get(slug)
+    const other = taken.get(slug)
     if (other) issues.push({ file: note.file, message: `slug「${slug}」与 ${other.file} 重复` })
-    else owners.set(slug, note)
+    else taken.set(slug, note)
   }
   const redirects: Record<string, string> = {}
-  const redirectOwners = new Map<string, Note>()
   for (const note of published) {
     for (const old of toList(note.data.redirect_from) as string[]) {
-      const other = owners.get(old) ?? redirectOwners.get(old)
+      const other = taken.get(old)
       if (other) {
         issues.push({ file: note.file, message: `redirect_from「${old}」与 ${other.file} 的地址冲突` })
         continue
       }
-      redirectOwners.set(old, note)
+      taken.set(old, note)
       redirects[`/posts/${old}/`] = `/posts/${note.data.slug}/`
     }
   }
@@ -229,26 +241,24 @@ function publicFrontmatter(note: Note): Record<string, unknown> {
 
 // ---------- 双链解析 ----------
 
-class NoteIndex {
-  private byName = new Map<string, Note[]>()
-  private notes: Note[]
+/** 按 Obsidian 的习惯解析：不带路径时按文件名匹配，带路径时按路径后缀匹配，不区分大小写。 */
+function findNotes(notes: Note[], target: string): Note[] {
+  const name = target.replace(/\.md$/i, '').toLowerCase()
+  return notes.filter((n) => {
+    const file = n.file.replace(/\.md$/i, '').toLowerCase()
+    return file === name || file.endsWith(`/${name}`)
+  })
+}
 
-  constructor(notes: Note[]) {
-    this.notes = notes
-    for (const note of notes) {
-      const name = path.posix.basename(note.file, '.md').toLowerCase()
-      this.byName.set(name, [...(this.byName.get(name) ?? []), note])
-    }
-  }
-
-  /** 按 Obsidian 的习惯解析：不带路径时按文件名匹配，带路径时按路径（后缀）匹配。 */
-  find(target: string): Note[] {
-    const name = target.replace(/\.md$/i, '').toLowerCase()
-    if (!name.includes('/')) return this.byName.get(name) ?? []
-    return this.notes.filter((n) => {
-      const file = n.file.replace(/\.md$/i, '').toLowerCase()
-      return file === name || file.endsWith(`/${name}`)
-    })
+/** 逐行调用；当前行是代码围栏的起止行或位于围栏内时返回 true。 */
+function fenceTracker(): (line: string) => boolean {
+  let fence: string | undefined
+  return (line) => {
+    const match = /^\s*(?:>\s*)*(`{3,}|~{3,})/.exec(line)
+    if (!match) return fence !== undefined
+    if (!fence) fence = match[1][0]
+    else if (match[1][0] === fence) fence = undefined
+    return true
   }
 }
 
@@ -257,15 +267,9 @@ function headingsOf(note: Note): Heading[] {
   // 与 Astro 生成标题 id 的方式保持一致：同一篇内按出现顺序用 github-slugger 去重。
   const slugger = new GithubSlugger()
   const headings: Heading[] = []
-  let fence: string | undefined
+  const inCode = fenceTracker()
   for (const line of note.body.split('\n')) {
-    const fenceMatch = /^\s*(`{3,}|~{3,})/.exec(line)
-    if (fenceMatch) {
-      if (!fence) fence = fenceMatch[1][0]
-      else if (fenceMatch[1][0] === fence) fence = undefined
-      continue
-    }
-    if (fence) continue
+    if (inCode(line)) continue
     const match = /^#{1,6}\s+(.+?)\s*#*\s*$/.exec(line)
     if (!match) continue
     const text = plainText(match[1])
@@ -302,10 +306,11 @@ class AssetRegistry {
   private vaultRoot: string | undefined
   private boundary: string
 
-  constructor(contentRoot: string, vaultRoot: string | undefined, boundary: string) {
+  constructor(contentRoot: string, vaultRoot: string | undefined) {
     this.contentRoot = contentRoot
     this.vaultRoot = vaultRoot
-    this.boundary = boundary
+    // 附件必须位于库内；找不到库根目录时退回到内容目录。
+    this.boundary = vaultRoot ?? contentRoot
   }
 
   entries(): [string, string][] {
@@ -314,7 +319,7 @@ class AssetRegistry {
 
   /** 解析原稿中的图片引用，登记为待导出附件，返回导出后的文件名；失败时返回错误信息。 */
   resolve(target: string, note: Note): { name: string } | { error: string } {
-    if (!IMAGE_EXTS.has(path.extname(target).toLowerCase())) {
+    if (!isImage(target)) {
       return { error: `不支持的附件类型「${target}」（仅导出图片：${[...IMAGE_EXTS].join(' ')}）` }
     }
     const candidates = this.candidates(target, note)
@@ -350,7 +355,7 @@ class AssetRegistry {
     }
     this.byName = new Map()
     for (const dir of dirs) {
-      for (const abs of walk(dir, (name) => IMAGE_EXTS.has(path.extname(name).toLowerCase()))) {
+      for (const abs of walk(dir, isImage)) {
         const key = path.basename(abs).toLowerCase()
         const list = this.byName.get(key) ?? []
         if (!list.includes(abs)) this.byName.set(key, [...list, abs])
@@ -388,7 +393,7 @@ function readAttachmentFolder(vaultRoot: string): string | undefined {
 // ---------- 正文转换 ----------
 
 interface TransformContext {
-  noteIndex: NoteIndex
+  notes: Note[]
   assets: AssetRegistry
   issues: Issue[]
 }
@@ -397,103 +402,78 @@ const INLINE_RE =
   /!\[\[([^\]\n]+?)\]\]|\[\[([^\]\n]+?)\]\]|!\[([^\]]*)\]\((<[^>\n]+>|[^)\s]+)(\s+"[^"]*")?\)|(?<!!)\[[^\]]*\]\(([^)\s]+)\)/g
 
 function transformBody(note: Note, ctx: TransformContext): string {
-  const out: string[] = []
-  let fence: string | undefined
+  const inCode = fenceTracker()
   let inComment = false
 
-  note.body.split('\n').forEach((line, index) => {
-    const lineNo = note.bodyLine + index
-    const fenceMatch = inComment ? null : /^\s*(?:>\s*)*(`{3,}|~{3,})/.exec(line)
-    if (fenceMatch) {
-      if (!fence) fence = fenceMatch[1][0]
-      else if (fenceMatch[1][0] === fence) fence = undefined
-      return out.push(line)
-    }
-    if (fence) return out.push(line)
+  return note.body
+    .split('\n')
+    .map((line, index) => {
+      if (!inComment && inCode(line)) return line
 
-    // 行内代码原样保留，其余片段去掉 %%注释%% 后再转换。
-    const parts = line.split(/((`+)[^`]*?\2)/)
-    let text = ''
-    for (let i = 0; i < parts.length; i += 3) {
-      let segment = ''
-      for (const [j, piece] of parts[i].split('%%').entries()) {
-        if (j > 0) inComment = !inComment
-        if (!inComment) segment += piece
+      // 行内代码原样保留，其余片段去掉 %%注释%% 后再转换。
+      const parts = line.split(/((`+)[^`]*?\2)/)
+      let text = ''
+      for (let i = 0; i < parts.length; i += 3) {
+        let segment = ''
+        for (const [j, piece] of parts[i].split('%%').entries()) {
+          if (j > 0) inComment = !inComment
+          if (!inComment) segment += piece
+        }
+        text += transformInline(segment, note, note.bodyLine + index, ctx)
+        if (parts[i + 1] !== undefined && !inComment) text += parts[i + 1]
       }
-      text += transformInline(segment, note, lineNo, ctx)
-      if (parts[i + 1] !== undefined && !inComment) text += parts[i + 1]
-    }
-    out.push(text)
-  })
-  return out.join('\n')
+      return text
+    })
+    .join('\n')
 }
 
 function transformInline(text: string, note: Note, line: number, ctx: TransformContext): string {
-  const report = (message: string) => ctx.issues.push({ file: note.file, line, message })
-
-  const image = (target: string, alt: string, original: string, title = ''): string => {
-    const resolved = ctx.assets.resolve(target, note)
-    if ('error' in resolved) {
-      report(resolved.error)
+  return text.replace(INLINE_RE, (original, embed, link, mdAlt, mdDest, mdTitle, mdLink) => {
+    /** 记录问题，并让原文保持不变。 */
+    const fail = (message: string): string => {
+      ctx.issues.push({ file: note.file, line, message })
       return original
     }
-    return `![${alt}](../assets/${resolved.name}${title})`
-  }
-
-  return text.replace(INLINE_RE, (original, embed, link, mdAlt, mdDest, mdTitle, mdLink) => {
-    if (embed !== undefined) {
-      const [target, alias] = splitAlias(embed)
-      if (!IMAGE_EXTS.has(path.extname(target).toLowerCase())) {
-        report(`不支持嵌入「${target}」：首版只支持 ![[图片]]，不支持笔记嵌入`)
-        return original
-      }
-      // `![[a.png|300]]` 的尺寸在首版被忽略；非数字别名作为替代文字。
-      const alt = alias && !/^\d+(x\d+)?$/.test(alias) ? alias : ''
-      return image(target, alt, original)
+    const image = (target: string, alt: string, title = ''): string => {
+      const resolved = ctx.assets.resolve(target, note)
+      return 'error' in resolved ? fail(resolved.error) : `![${alt}](../assets/${resolved.name}${title})`
     }
 
-    if (link !== undefined) return wikilink(link, original, note, report, ctx)
+    if (embed !== undefined) {
+      const [target, alias] = splitAlias(embed)
+      if (!isImage(target)) return fail(`不支持嵌入「${target}」：首版只支持 ![[图片]]，不支持笔记嵌入`)
+      // `![[a.png|300]]` 的尺寸在首版被忽略；非数字别名作为替代文字。
+      return image(target, alias && !/^\d+(x\d+)?$/.test(alias) ? alias : '')
+    }
+
+    if (link !== undefined) return wikilink(link, note, ctx.notes, fail)
 
     const dest = safeDecode((mdDest ?? mdLink).replace(/^<|>$/g, ''))
     if (/^[a-z][a-z0-9+.-]*:|^\/\/|^#/i.test(dest)) return original
-    if (mdDest !== undefined) return image(dest.replace(/[?#].*$/, ''), mdAlt, original, mdTitle ?? '')
-    if (/\.md(#.*)?$/i.test(dest)) report(`指向笔记的 Markdown 链接「${dest}」无法转换，请改用 [[双链]]`)
+    if (mdDest !== undefined) return image(dest.replace(/[?#].*$/, ''), mdAlt, mdTitle ?? '')
+    if (/\.md(#.*)?$/i.test(dest)) return fail(`指向笔记的 Markdown 链接「${dest}」无法转换，请改用 [[双链]]`)
     return original
   })
 }
 
-function wikilink(
-  inner: string,
-  original: string,
-  note: Note,
-  report: (message: string) => void,
-  ctx: TransformContext,
-): string {
+function wikilink(inner: string, note: Note, notes: Note[], fail: (message: string) => string): string {
   const [targetPart, alias] = splitAlias(inner)
   const hashIndex = targetPart.indexOf('#')
   const name = (hashIndex === -1 ? targetPart : targetPart.slice(0, hashIndex)).trim()
   const heading = hashIndex === -1 ? undefined : targetPart.slice(hashIndex + 1).trim()
 
-  if (heading?.startsWith('^')) {
-    report(`不支持块引用「[[${inner}]]」`)
-    return original
-  }
+  if (heading?.startsWith('^')) return fail(`不支持块引用「[[${inner}]]」`)
 
   let target = note
   if (name !== '') {
-    const matches = ctx.noteIndex.find(name)
-    if (matches.length === 0) {
-      report(`失效的双链「[[${name}]]」：博客目录中找不到这篇文章`)
-      return original
-    }
+    const matches = findNotes(notes, name)
+    if (matches.length === 0) return fail(`失效的双链「[[${name}]]」：博客目录中找不到这篇文章`)
     if (matches.length > 1) {
-      report(`双链「[[${name}]]」有歧义，匹配到：${matches.map((m) => m.file).join('、')}`)
-      return original
+      return fail(`双链「[[${name}]]」有歧义，匹配到：${matches.map((m) => m.file).join('、')}`)
     }
     target = matches[0]
     if (!target.publishable) {
-      report(`双链「[[${name}]]」指向未发布的文章 ${target.file}（status: ${target.status ?? '无效'}）`)
-      return original
+      return fail(`双链「[[${name}]]」指向未发布的文章 ${target.file}（status: ${target.status ?? '无效'}）`)
     }
   }
 
@@ -501,10 +481,7 @@ function wikilink(
   if (heading) {
     const wanted = plainText(heading).toLowerCase()
     const found = headingsOf(target).find((h) => h.text.toLowerCase() === wanted)
-    if (!found) {
-      report(`双链「[[${inner}]]」：${target.file} 中找不到标题「${heading}」`)
-      return original
-    }
+    if (!found) return fail(`双链「[[${inner}]]」：${target.file} 中找不到标题「${heading}」`)
     anchor = `#${found.anchor}`
   }
 

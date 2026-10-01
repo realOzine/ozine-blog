@@ -45,9 +45,9 @@ function transform(node: Readonly<Element>): Element | undefined {
   const type = rawType.toLowerCase()
   const title = rawTitle.trim() || LABELS[type] || rawType
 
-  const bodyInline: ElementContent[] = [...paragraph.children.slice(1)]
+  const bodyInline: ElementContent[] = paragraph.children.slice(1)
   if (rest) bodyInline.unshift({ type: 'text', value: rest })
-  const body: ElementContent[] = [...node.children.slice(paragraphIndex + 1)]
+  const body: ElementContent[] = node.children.slice(paragraphIndex + 1)
   if (bodyInline.length > 0) {
     body.unshift({ type: 'element', tagName: 'p', properties: {}, children: bodyInline })
   }
@@ -70,6 +70,6 @@ export const callout = {
   name: 'obsidian-callout',
   element: {
     filter: ['blockquote'],
-    visit: (node: Readonly<Element>) => transform(node),
+    visit: transform,
   },
 }
