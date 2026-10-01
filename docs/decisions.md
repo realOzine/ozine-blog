@@ -102,11 +102,14 @@
 - 暂存区有其它变更时直接停止；工作区有其它未提交变更时只提示。
 - **失**：`git push` 会连同你本地尚未推送的其它提交一起推上去；推送失败时提交留在本地，需手动处理后再推。
 
-### D15 只报告「推送成功」，不核实 Vercel 部署
+### D15 推送后自动核实 Vercel 部署，用 `vercel` CLI 按提交哈希查询
 
-- 本机没有 `vercel`、`gh` CLI，也还没有 Vercel 项目，无法查询部署结果。命令明确输出「部署状态未核实」。
-- **现状（2026-10-01）**：`gh` 与 `vercel` CLI 已安装，Vercel 项目 `ozine-blog` 已创建并关联 GitHub 仓库，推送 `main` 会自动部署到 <https://ozine-blog.vercel.app>。发布命令本身仍不核实部署结果。
-- **后续**：可在发布命令末尾用 `vercel` CLI 或 API 轮询部署状态，补上「上线完成」的报告。
+- **选择**：推送成功后，`npm run release` 每 5 秒执行一次 `vercel ls --format json`，找到本次提交对应的生产部署，等到 `READY` 才报告「上线完成」；`ERROR` / `CANCELED` 时以失败退出。最多等 5 分钟，`--no-wait` 可跳过。
+- **放弃**：读 GitHub 上的提交状态（`gh api …/status`）——多依赖一层 Vercel 的 GitHub 集成回写；直接调 Vercel REST API——需要自己管理 token。
+- **得**：「推送成功」与「上线完成」分开报告，部署失败能在命令里直接看到。
+- **失**：依赖本机已登录的 `vercel` CLI 和 `.vercel/` 关联（换电脑要重新 `vercel login` 与 `vercel link`）。CLI 不可用或等待超时时只提示「部署状态未核实」并正常退出，不算失败——此时仍需人工确认。
+- **注意**：实测 `vercel ls --meta githubCommitSha=…` 对未知哈希也会返回最近一次部署，所以程序拿到列表后按哈希再筛一遍，避免把上一次部署误报成本次上线。
+- **现状（2026-10-01）**：Vercel 项目 `ozine-blog` 已关联 GitHub 仓库，推送 `main` 自动部署到 <https://ozine-blog.vercel.app>。
 
 ### D16 脚本用 Node 原生运行 TypeScript，不引入 tsx 等运行器
 

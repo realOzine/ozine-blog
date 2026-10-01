@@ -13,13 +13,13 @@ Personal blog: Astro 7 + TypeScript + Tailwind CSS 4. Articles are written in Ob
 ```sh
 npm run dev                       # preview whatever is in published/
 npm run sample                    # export fixtures/ to .publish-tmp and preview that (use this to see real content)
-npm test                          # export-pipeline tests (node:test)
+npm test                          # export + deploy-verification tests (node:test)
 node --test --test-name-pattern='重复 slug' scripts/export.test.ts   # single test
 npm run check                     # astro check (types)
 npm run build
 npm run export                    # content/ → published/, no build, no git
 npm run release -- --dry-run      # validate + export to temp + build; touches nothing
-npm run release                   # full publish: also replaces published/, commits it, pushes
+npm run release                   # full publish: also replaces published/, commits it, pushes, waits for the Vercel deployment
 ```
 
 Scripts run as TypeScript directly on Node (type stripping, Node ≥ 22.18): use `.ts` import extensions and erasable syntax only (no enums / parameter properties). TypeScript is pinned to 6.x because `@astrojs/check` does not accept 7.
@@ -54,5 +54,6 @@ Things that are easy to get wrong:
 - `PUBLISHED_DIR` env var redirects both the content collection and the redirects lookup; `release` uses it to build against `.publish-tmp/` before replacing `published/`.
 - All pages get posts through `src/lib/posts.ts` (`getPosts` / `getTags`) so the public set is identical everywhere. Tags are grouped case-insensitively.
 - Adding a public frontmatter field means changing both `publicFrontmatter()` in the export script and the schema in `src/content.config.ts`.
+- Deployment verification (`scripts/lib/vercel.ts`) shells out to the logged-in `vercel` CLI. `vercel ls --meta githubCommitSha=…` does not reliably filter, so results are re-filtered by SHA in code — keep that filter, or a previous deployment's READY gets reported as this release going live.
 - `published/` is program-owned. Don't hand-edit it; `release` commits only that path and refuses to run with other staged changes.
 - `fixtures/vault/` is a miniature vault mirroring the real layout; error cases are generated inside `scripts/export.test.ts`. Never write test content into the user's Obsidian vault.

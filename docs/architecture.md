@@ -53,7 +53,9 @@ ozine-blog/
 | --- | --- | --- |
 | `scripts/lib/export.ts` | 导出的核心逻辑 | 读取原稿、解析并校验 frontmatter、按 `status` 筛选、检查 `slug` 与 `redirect_from` 唯一性、解析双链与标题锚点、查找并登记附件、删除 `%%注释%%`、输出公开副本。所有问题收集为带文件和行号的 `Issue`，有任何问题就不写文件。**不负责**：构建网站、Git 操作、Callout 渲染。 |
 | `scripts/export.ts` | `npm run export` 的命令行入口 | 解析参数、调用核心逻辑、打印结果。不含业务规则。 |
-| `scripts/publish.ts` | `npm run release` 的命令行入口 | 串联发布流程：检查 Git 状态 → 导出到 `.publish-tmp/` → 用临时副本构建 → 替换 `published/` → 只提交 `published/`（提交信息为 `content: …`）→ 推送。负责失败时停止并说明原因。**不负责**：内容规则（全部委托给 `lib/export.ts`）、核实 Vercel 部署结果。 |
+| `scripts/publish.ts` | `npm run release` 的命令行入口 | 串联发布流程：检查 Git 状态 → 导出到 `.publish-tmp/` → 用临时副本构建 → 替换 `published/` → 只提交 `published/`（提交信息为 `content: …`）→ 推送 → 等待并报告部署结果。负责失败时停止并说明原因，并把「推送成功」与「上线完成」分开报告。**不负责**：内容规则（委托给 `lib/export.ts`）、部署状态的查询（委托给 `lib/vercel.ts`）。 |
+| `scripts/lib/vercel.ts` | 核实 Vercel 部署 | 通过本机的 `vercel` CLI 按提交哈希查找部署并轮询到终态，返回 ready / failed / timeout / unavailable 四种结果。只查询，不触发部署，也不决定退出码。 |
+| `scripts/vercel.test.ts` | 部署核实逻辑的测试 | 用假的查询函数验证轮询、失败、超时和不可用几种情况，不访问网络。 |
 | `scripts/export.test.ts` | 导出规则的测试 | 用 `fixtures/vault/` 验证正常路径，并在临时目录里生成各类错误样本。只测导出，不测页面和发布命令。 |
 
 ## 4．`src/`：Astro 站点
@@ -103,6 +105,7 @@ ozine-blog/
 | `package.json` | 依赖与命令 | 所有 `npm run` 命令的定义。 |
 | `package-lock.json` | 依赖版本锁定 | 由 npm 维护。 |
 | `tsconfig.json` | TypeScript 配置 | 继承 Astro 严格模式；允许脚本用 `.ts` 扩展名互相导入。 |
+| `.vercel/` | Vercel CLI 的项目关联信息 | 由 `vercel link` 生成，Git 忽略。核实部署时 CLI 靠它知道查哪个项目。 |
 | `.gitignore` | Git 忽略规则 | 忽略 `content` 软链接、`.publish-tmp/`、构建产物、依赖，以及 Vercel CLI 的本地文件（`.vercel/`、`.env*`）。 |
 
 ## 7．文档
@@ -122,3 +125,4 @@ ozine-blog/
 3. `astro.config.mjs` 与 `src/content.config.ts` 在 `PUBLISHED_DIR=.publish-tmp` 下读取临时副本，`src/` 构建出 `dist/`。
 4. 构建通过后，`scripts/publish.ts` 用临时副本替换 `published/`，提交并推送。
 5. Vercel 拉取仓库，只用 `published/` 和 `src/` 重新构建，不需要 `content` 和 `scripts/`。
+6. `scripts/lib/vercel.ts` 轮询这次提交的部署状态，`scripts/publish.ts` 据此报告「上线完成」或部署失败。

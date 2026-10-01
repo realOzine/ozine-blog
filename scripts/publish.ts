@@ -1,21 +1,24 @@
-// 发布命令：校验 → 导出到临时目录 → 构建检查 → 更新 published/ → 提交 → 推送。
-// 任何一步失败都会停止，并且不会推送。
+// 发布命令：校验 → 导出到临时目录 → 构建检查 → 更新 published/ → 提交 → 推送 → 核实部署。
+// 推送之前任何一步失败都会停止，并且不会推送。
 //
 //   npm run release                 完整发布
 //   npm run release -- --dry-run    只做校验、导出和构建检查，不改动 published/ 与 Git
 //   npm run release -- --no-push    提交但不推送
+//   npm run release -- --no-wait    推送后不等待 Vercel 部署结果
 
 import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { parseArgs } from 'node:util'
 import { exportContent, formatIssue } from './lib/export.ts'
+import { waitForDeployment } from './lib/vercel.ts'
 
 const { values: args } = parseArgs({
   options: {
     content: { type: 'string', default: 'content' },
     'dry-run': { type: 'boolean', default: false },
     'no-push': { type: 'boolean', default: false },
+    'no-wait': { type: 'boolean', default: false },
   },
 })
 
@@ -127,5 +130,32 @@ if (!push.ok) {
   fail(`已提交到本地，但推送失败（可能是远程有新提交或网络问题），请处理后手动 git push：\n${push.stderr}`)
 }
 
-console.log('\n✓ 推送成功。')
-console.log('  部署状态未核实：请在 Vercel 确认本次构建成功后，才算上线完成。')
+console.log('  推送成功。')
+
+// ---------- 7. 核实部署 ----------
+// 「推送成功」与「部署成功」分别报告：只有 Vercel 确认构建完成，才算上线。
+
+if (args['no-wait']) {
+  console.log('\n✓ 推送成功。部署状态未核实（--no-wait）。')
+  process.exit(0)
+}
+
+step('等待 Vercel 部署')
+const sha = git('rev-parse', 'HEAD').stdout
+const deploy = await waitForDeployment(sha, { onProgress: (state) => console.log(`  ${state}`) })
+
+switch (deploy.status) {
+  case 'ready':
+    console.log(`\n✓ 上线完成：${deploy.deployment.url}`)
+    break
+  case 'failed':
+    console.error(`\n✗ 推送成功，但 Vercel 部署失败（${deploy.deployment.state}）：${deploy.deployment.url}`)
+    console.error(`  线上仍是上一个版本。查看日志：vercel inspect ${deploy.deployment.url} --logs`)
+    process.exit(1)
+  case 'timeout':
+    console.log(`\n! 推送成功，但等待部署超时，部署状态未核实。${deploy.deployment ? `当前状态：${deploy.deployment.state}` : ''}`)
+    break
+  case 'unavailable':
+    console.log(`\n! 推送成功，但无法核实部署状态：${deploy.reason}`)
+    break
+}
