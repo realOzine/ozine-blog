@@ -138,6 +138,16 @@
     list-style-type: decimal;
   }
 
+  /* 任务列表：复选框就是符号，不再画 > */
+  .task-list-item {
+    list-style-type: none;
+  }
+
+  .task-list-item > input {
+    margin-right: var(--spacing-cw);
+    accent-color: var(--color-purple);
+  }
+
   /* 引用块与提示块：左侧一条 2px 竖线，线宽算进格子（竖线 + 内边距 = 1.5 个字符） */
   blockquote,
   .callout {
@@ -154,6 +164,15 @@
     margin-bottom: 0;
   }
 
+  /* 正文里直接写的 <details>：上下各空一行（提示块的折叠版另有自己的外边距） */
+  details {
+    margin-block: var(--spacing-line);
+  }
+
+  summary {
+    cursor: pointer;
+  }
+
   /* 分隔线不画线，只空出一行 */
   hr {
     height: var(--spacing-line);
@@ -166,14 +185,16 @@
     overflow-x: auto;
   }
 
+  /* 单元格不折行，放不下时整张表横向滚动。Markdown 里指定的对齐方式写在单元格的 style 上，会盖过这里的左对齐 */
   th,
   td {
     padding: calc(var(--spacing-line) / 2) calc(var(--spacing-cw) * 2) calc(var(--spacing-line) / 2) 0;
-    text-align: left;
     vertical-align: top;
+    white-space: nowrap;
   }
 
   th {
+    text-align: left;
     color: var(--color-blue);
     font-weight: 700;
   }
@@ -183,6 +204,54 @@
     color: var(--color-cyan);
     font-family: var(--font-mono);
     font-size: 0.9rem;
+  }
+
+  /* 按键：和原站的按钮一样用方括号括起来，不画键帽 */
+  kbd {
+    color: var(--color-strong);
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  kbd::before {
+    content: "[";
+  }
+
+  kbd::after {
+    content: "]";
+  }
+
+  /* 高亮是这套设计里唯一的底色：淡淡一层黄，文字颜色不变 */
+  mark {
+    background: color-mix(in oklab, var(--color-yellow) 30%, transparent);
+    color: inherit;
+  }
+
+  /* 公式是页面上唯一的衬线字；KaTeX 默认放大到 1.21 倍，这里收一点，免得比正文大太多 */
+  .katex {
+    font-size: 1.1em;
+  }
+
+  /* 块级公式上下各空一行，放不下时自己横向滚动 */
+  .katex-display {
+    margin-block: var(--spacing-line);
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  /* 脚注区的标题只给读屏软件；脚注和正文之间多空一行 */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .footnotes {
+    margin-top: calc(var(--spacing-line) * 2);
   }
 
   /* 代码块是页面上唯一的盒子；1px 描边算进格子 */
@@ -306,10 +375,6 @@
 
 .callout-title + * {
   margin-top: 0;
-}
-
-summary.callout-title {
-  cursor: pointer;
 }
 
 .callout:is([data-callout="tip"], [data-callout="hint"], [data-callout="success"]) {

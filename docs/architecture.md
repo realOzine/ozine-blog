@@ -52,7 +52,7 @@ ozine-blog/
 
 | 文件 | 作用 | 负责范围 |
 | --- | --- | --- |
-| `scripts/lib/export.ts` | 导出的核心逻辑 | 读取原稿、只取 `published/` 文件夹里的笔记、解析并校验它们的 frontmatter、以笔记名作标题、检查 `slug` 与 `redirect_from` 唯一性、解析双链、用 Astro 的 Markdown 处理器取得标题锚点、查找并登记附件、删除 `%%注释%%`、输出公开副本。所有问题收集为带文件和行号的 `Issue`，有任何问题就不写文件。**不负责**：构建网站、Git 操作、Callout 渲染。 |
+| `scripts/lib/export.ts` | 导出的核心逻辑 | 读取原稿、只取 `published/` 文件夹里的笔记、解析并校验它们的 frontmatter、以笔记名作标题、检查 `slug` 与 `redirect_from` 唯一性、解析双链、把 `==高亮==` 换成 `<mark>`、用 Astro 的 Markdown 处理器取得标题锚点、查找并登记附件、删除 `%%注释%%`、输出公开副本。所有问题收集为带文件和行号的 `Issue`，有任何问题就不写文件。**不负责**：构建网站、Git 操作、Callout 渲染。 |
 | `scripts/export.ts` | `npm run export` 的命令行入口 | 解析参数、调用核心逻辑、打印结果。不含业务规则，输出文字的格式也由核心逻辑提供。 |
 | `scripts/publish.ts` | `npm run release` 的命令行入口 | 串联发布流程：检查 Git 状态 → 导出到 `.publish-tmp/`（与已提交的 `published/` 完全一致时到此结束）→ 用临时副本构建 → 替换 `published/` → 只提交 `published/`（提交信息为 `content: …`）→ 推送 → 等待并报告部署结果。负责失败时停止并说明原因，并把「推送成功」与「上线完成」分开报告。**不负责**：内容规则（委托给 `lib/export.ts`）、部署状态的查询（委托给 `lib/vercel.ts`）。 |
 | `scripts/lib/vercel.ts` | 核实 Vercel 部署 | 通过本机的 `vercel` CLI 按提交哈希查找部署并轮询到终态，返回 ready / failed / timeout / unavailable 四种结果。只查询，不触发部署，也不决定退出码。 |
@@ -68,6 +68,7 @@ ozine-blog/
 | `src/content.config.ts` | 定义 `posts` 内容集合 | 指定从 `published/posts/` 读取文章，并声明公开 frontmatter 的类型。新增公开字段时要与 `scripts/lib/export.ts` 的白名单一起改。 |
 | `src/site.config.ts` | 站点级文案 | 站点名、简介、首页文案（英文）、GitHub 主页地址。改文案只需改这里。 |
 | `src/lib/published.ts` | 公开副本目录的位置 | 唯一定义 `PUBLISHED_DIR` 环境变量及其默认值 `./published` 的地方，供 `astro.config.mjs` 和 `src/content.config.ts` 共用。 |
+| `src/lib/markdown.ts` | Markdown 的语法开关 | 目前只有一项：开启数学公式。`astro.config.mjs` 和 `scripts/lib/export.ts` 都从这里取，保证两边解析出的标题一致。这是 `scripts/` 唯一依赖 `src/` 的地方。 |
 | `src/lib/posts.ts` | 文章的查询 | 所有页面都通过它取文章（按日期倒序），保证各处公开范围一致。还提供日期格式化和阅读时长的估算。 |
 
 ### 页面（文件路径即网址）
@@ -81,20 +82,21 @@ ozine-blog/
 
 | 文件 | 作用 | 负责范围 |
 | --- | --- | --- |
-| `src/layouts/Base.astro` | 所有页面共用的外壳 | `<head>`（含网站图标）、页头（右上角的主题切换与 GitHub 链接，文章页左上角的返回链接）。引入全局样式、两款等宽字体和 Vercel 访问统计组件（`@vercel/analytics`）。含两段内联脚本：套用上次选的明暗主题、处理主题切换的点击。没有页脚。 |
+| `src/layouts/Base.astro` | 所有页面共用的外壳 | `<head>`（含网站图标）、页头（右上角的主题切换与 GitHub 链接，文章页左上角的返回链接）。引入全局样式、两款等宽字体、KaTeX 的公式样式表和 Vercel 访问统计组件（`@vercel/analytics`）。含两段内联脚本：套用上次选的明暗主题、处理主题切换的点击。没有页脚。 |
 | `src/components/PostList.astro` | 文章列表 | 首页使用。每篇三行：标题链接、日期行、摘要。 |
 | `src/components/PostMeta.astro` | 日期行 | 「日期 / N min read」，首页列表和文章详情页共用；文章详情页多显示更新日期和标签。标签只是文字，不是链接（站点没有标签页）。 |
 | `src/components/Toc.astro` | 文章目录 | 渲染二、三级标题的链接，每项带 `depth-2` / `depth-3` 类名；显示位置和样式由 `global.css` 决定。 |
 | `src/plugins/callout.ts` | Callout 渲染插件 | 构建时把 `> [!type]` 引用块转成提示块的 HTML 结构。只管结构，不管颜色。 |
 | `src/plugins/heading-anchor.ts` | 标题锚点插件 | 构建时在正文的二、三级标题后面加一个指向自己的链接。id 取自 Astro 内置的标题 id 插件，不自己算。只管结构，`#` 字符和样式在 `global.css`。 |
-| `src/styles/global.css` | 全局样式 | 引入 Tailwind；定义全部设计 token（字体、字符格、颜色，见 `docs/design.md`）；所有元素的基础样式（标题、段落、链接、列表、引用、表格、代码、滚动条），对全站生效；明暗主题的切换；代码高亮的明暗切换；页头、目录、标题锚点、Callout 的外观。 |
+| `src/plugins/math.ts` | 公式渲染插件 | 构建时把处理器标出的行内和块级公式交给 KaTeX 渲染成 HTML。公式写错会让构建失败。样式和字体来自 `Base.astro` 引入的 KaTeX 样式表。 |
+| `src/styles/global.css` | 全局样式 | 引入 Tailwind；定义全部设计 token（字体、字符格、颜色，见 `docs/design.md`）；所有元素的基础样式（标题、段落、链接、列表、引用、表格、代码、滚动条），对全站生效；明暗主题的切换；代码高亮的明暗切换；页头、目录、标题锚点、Callout 的外观；任务列表、高亮、按键、脚注、公式的样式。 |
 
 ## 5．根目录配置
 
 | 文件 | 作用 | 负责范围 |
 | --- | --- | --- |
-| `astro.config.mjs` | Astro 配置 | 网址末尾斜杠、读取重定向表、Markdown 处理器与 Callout、标题锚点两个插件、代码高亮主题、接入 Tailwind、禁止把字体分片内联进样式表。公开副本目录取自 `src/lib/published.ts`。 |
-| `package.json` | 依赖与命令 | 所有 `npm run` 命令的定义。依赖里的 `@fontsource-variable/inconsolata` 和 `@fontsource-variable/source-code-pro` 是随站点部署的两款等宽字体；开发依赖里的 `sharp` 供 `pic/cut-character.mjs` 使用。 |
+| `astro.config.mjs` | Astro 配置 | 网址末尾斜杠、读取重定向表、Markdown 处理器及其语法开关（取自 `src/lib/markdown.ts`）、Callout、标题锚点、公式三个插件、代码高亮主题、接入 Tailwind、禁止把字体分片内联进样式表。公开副本目录取自 `src/lib/published.ts`。 |
+| `package.json` | 依赖与命令 | 所有 `npm run` 命令的定义。依赖里的 `@fontsource-variable/inconsolata` 和 `@fontsource-variable/source-code-pro` 是随站点部署的两款等宽字体，`katex` 在构建时渲染公式并提供公式的样式表和字体；开发依赖里的 `sharp` 供 `pic/cut-character.mjs` 使用。 |
 | `package-lock.json` | 依赖版本锁定 | 由 npm 维护。 |
 | `tsconfig.json` | TypeScript 配置 | 继承 Astro 严格模式；允许脚本用 `.ts` 扩展名互相导入。 |
 | `.vercel/` | Vercel CLI 的项目关联信息 | 由 `vercel link` 生成，Git 忽略。核实部署时 CLI 靠它知道查哪个项目。 |

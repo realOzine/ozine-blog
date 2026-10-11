@@ -7,6 +7,7 @@ import path from 'node:path'
 import { createSatteriMarkdownProcessor } from '@astrojs/markdown-satteri'
 import { slug as slugify } from 'github-slugger'
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
+import { markdownFeatures } from '../../src/lib/markdown.ts'
 
 /** 内容目录下的这个文件夹里的笔记才发布；放在别处的一律不发布，也不校验。 */
 const PUBLISHED_FOLDER = 'published'
@@ -90,8 +91,8 @@ export async function exportContent(options: ExportOptions): Promise<ExportResul
   const redirects = checkSlugs(published, issues)
 
   // 标题锚点直接取自 Astro 使用的 Markdown 处理器，而不是自己解析，保证与线上的标题 id 一致。
-  // 这里的处理器选项要与 astro.config.mjs 中 satteri() 的 features 保持一致（目前都是默认值）。
-  const { render } = await createSatteriMarkdownProcessor({ syntaxHighlight: false })
+  // 语法开关与 astro.config.mjs 共用同一份，否则两边算出的标题 id 会不一致。
+  const { render } = await createSatteriMarkdownProcessor({ syntaxHighlight: false, features: markdownFeatures })
   await Promise.all(published.map((note) => readHeadings(note, notes, render)))
 
   const assets = new AssetRegistry(contentRoot, findVaultRoot(contentRoot))
@@ -353,7 +354,7 @@ function headingKey(text: string): string {
  */
 async function readHeadings(note: Note, notes: Note[], render: RenderMarkdown): Promise<void> {
   const source = mapBody(note.body, (text) =>
-    text.replace(/(!?)\[\[([^\]\n]+?)\]\]/g, (original, bang: string, inner: string) => {
+    highlight(text).replace(/(!?)\[\[([^\]\n]+?)\]\]/g, (original, bang: string, inner: string) => {
       if (bang) return `![${imageAlt(splitAlias(inner)[1])}](x)`
       const link = parseLink(inner)
       const matches = link.name === '' ? [note] : findNotes(notes, link.name)
@@ -485,8 +486,16 @@ function transformBody(note: Note, ctx: TransformContext): string {
   return mapBody(note.body, (text, index) => transformInline(text, note, note.bodyLine + index, ctx))
 }
 
+/**
+ * Obsidian 的 `==高亮==` 换成 <mark>。正文转换和标题提取都要经过它，两边看到的标题文字才一致。
+ * shortcut: 按正则匹配，分不清公式里的 `==`；要求等号内侧紧贴文字，`$a == b$` 这种带空格的写法不受影响。
+ */
+function highlight(text: string): string {
+  return text.replace(/==(?=\S)([^=\n]+?)(?<=\S)==/g, '<mark>$1</mark>')
+}
+
 function transformInline(text: string, note: Note, line: number, ctx: TransformContext): string {
-  return text.replace(INLINE_RE, (original, embed, link, mdAlt, mdDest, mdTitle, mdLink) => {
+  return highlight(text).replace(INLINE_RE, (original, embed, link, mdAlt, mdDest, mdTitle, mdLink) => {
     /** 记录问题，并让原文保持不变。 */
     const fail = (message: string): string => {
       ctx.issues.push({ file: note.file, line, message })

@@ -4,6 +4,8 @@ import '../styles/global.css'
 // 两款等宽字体都是可变字重、只含西文分片，样式表很小，直接并进主样式表。汉字用系统黑体，不下载字体。
 import '@fontsource-variable/inconsolata'
 import '@fontsource-variable/source-code-pro'
+// 公式的排版样式；它的字体只在页面上真有公式时才会被下载。
+import 'katex/dist/katex.min.css'
 import favicon from '../../pic/favicon.png?url'
 import { site } from '../site.config'
 

@@ -16,7 +16,10 @@ interface Props {
 
 const { post } = Astro.props
 const { Content, headings } = await render(post)
-const toc = headings.filter((heading) => heading.depth === 2 || heading.depth === 3)
+// 脚注区的标题是给读屏软件的（页面上不显示），不进目录
+const toc = headings.filter(
+  (heading) => (heading.depth === 2 || heading.depth === 3) && heading.slug !== 'footnote-label',
+)
 const { title, description } = post.data
 ---
 

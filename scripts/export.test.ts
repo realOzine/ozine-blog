@@ -464,6 +464,19 @@ test('标题里的强调、行内代码、转义和实体', async () => {
   assert.equal((await linkTo(body, '[[b#A & B * C|x]]')).text, '[x](/posts/b/#a--b--c)')
 })
 
+test('==高亮== 换成 <mark>，代码和带空格的等号不受影响', async () => {
+  const body = '这是==重点==。`==代码==` 不变，a == b == c 也不变。\n\n## 带==高亮==的标题'
+  const v = vault({ '40 blog/published/a.md': post(published('a'), `${body}\n\n[[#带高亮的标题]]`) })
+  assert.deepEqual((await v.run()).issues, [])
+  const text = v.read('posts/a.md')
+  assert.match(text, /这是<mark>重点<\/mark>。`==代码==` 不变，a == b == c 也不变。/)
+  assert.match(text, /\[带高亮的标题\]\(#带高亮的标题\)/)
+})
+
+test('标题里的公式按公式计算锚点，与站点一致', async () => {
+  assert.equal((await linkTo('## 复杂度 $O(n)$', '[[b#复杂度 O(n)|x]]')).text, '[x](/posts/b/#复杂度-on)')
+})
+
 test('显示文字用标题渲染后的文字，而不是链接里的写法', async () => {
   const body = '## **重点** 与 `Code`\n\n## Hello World'
   assert.equal((await linkTo(body, '[[b#**重点** 与 `Code`]]')).text, '[b › 重点 与 Code](/posts/b/#重点-与-code)')
