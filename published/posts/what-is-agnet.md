@@ -1,5 +1,5 @@
 ---
-title: "# Agent 是什么？从让 AI 帮你修一个 Bug 说起"
+title: Agent 是什么？从让 AI 帮你修一个 Bug 说起
 date: 2026-10-11
 tags:
   - agent

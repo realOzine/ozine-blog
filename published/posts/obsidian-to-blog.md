@@ -1,6 +1,6 @@
 ---
 title: 从 Obsidian 到博客的发布流程
-date: 2026-10-11
+date: 2026-10-09
 description: 文章只在 Obsidian 里写一份，公开什么、什么时候公开，由一个 status 字段和一条命令决定。
 ---
 
