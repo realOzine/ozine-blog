@@ -5,7 +5,7 @@
 - 规划：[`docs/plan.md`](docs/plan.md)
 - 项目结构与各文件职责：[`docs/architecture.md`](docs/architecture.md)
 - 实现中的选择与取舍：[`docs/decisions.md`](docs/decisions.md)
-- 视觉设计（配色、字体、角色图）：[`docs/design.md`](docs/design.md)
+- 视觉设计（字符格、配色、字体）：[`docs/design.md`](docs/design.md)
 
 ## 工作方式
 
@@ -30,13 +30,16 @@ ln -s "/path/to/Obsidian/vault/40 blog" content
 
 ## 写文章
 
-在 Obsidian 博客目录的任意位置新建笔记，frontmatter：
+在 Obsidian 博客目录里写笔记。两条约定不写在 frontmatter 里：
+
+- **标题就是笔记名**（文件名去掉 `.md`）。在 Obsidian 里改笔记名就是改标题。
+- **放进 `published/` 文件夹（含子文件夹）就发布**，放在别处（比如 `drafts/`）就不发布。撤回一篇文章，把它从 `published/` 里挪出来即可。
+
+`published/` 里的笔记需要这些 frontmatter：
 
 ```yaml
 ---
-title: 理解 Go 的接口
 slug: go-interfaces        # 决定网址 /posts/go-interfaces/，全站唯一
-status: draft              # draft | published | withdrawn
 date: 2026-09-29
 tags: [Go]                 # 可选
 description: 一句话摘要。    # 可选
@@ -45,7 +48,9 @@ redirect_from: old-slug    # 可选：改过 slug 时填旧值
 ---
 ```
 
-博客目录下的每个 `.md` 都必须有合法的 `status`。支持 `[[文章]]`、`[[文章|别名]]`、`[[文章#标题]]`、`![[图片.png]]`、Markdown 相对路径图片、Callout（`> [!note]`）和 `%%注释%%`（导出时删除）。
+`published/` 之外的笔记写成什么样都不检查。frontmatter 里如果还留着 `title`、`status`，会被忽略。
+
+支持 `[[文章]]`、`[[文章|别名]]`、`[[文章#标题]]`、`![[图片.png]]`、Markdown 相对路径图片、Callout（`> [!note]`）和 `%%注释%%`（导出时删除）。
 
 ## 命令
 

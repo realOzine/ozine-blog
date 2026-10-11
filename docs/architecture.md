@@ -39,8 +39,8 @@ ozine-blog/
 
 | 路径 | 作用 | 负责范围 |
 | --- | --- | --- |
-| `content` | 指向 Obsidian 博客目录的软链接 | 唯一的写作源。只在本机存在，不进入仓库；程序对它**只读**。附件在它之外（库内的 `90 system/attachments`），由导出脚本沿真实路径找到库根后读取。 |
-| `published/posts/{slug}.md` | 已发布文章的公开副本 | 文件名即网址中的 `slug`。双链和图片路径已改写，frontmatter 只剩白名单字段。 |
+| `content` | 指向 Obsidian 博客目录的软链接 | 唯一的写作源。只在本机存在，不进入仓库；程序对它**只读**。其中 `published/` 文件夹（含子文件夹）里的笔记会发布，其余位置的不发布。附件在它之外（库内的 `90 system/attachments`），由导出脚本沿真实路径找到库根后读取。 |
+| `published/posts/{slug}.md` | 已发布文章的公开副本 | 文件名即网址中的 `slug`。双链和图片路径已改写，frontmatter 只剩白名单字段（其中 `title` 是导出时按笔记名写入的）。 |
 | `published/assets/` | 公开文章实际引用的图片 | 只有被已发布文章引用的图片才会出现；没有附件时目录不存在。 |
 | `published/redirects.json` | 旧地址 → 新地址 | 由文章的 `redirect_from` 生成，供 `astro.config.mjs` 读取。 |
 
@@ -52,7 +52,7 @@ ozine-blog/
 
 | 文件 | 作用 | 负责范围 |
 | --- | --- | --- |
-| `scripts/lib/export.ts` | 导出的核心逻辑 | 读取原稿、解析并校验 frontmatter、按 `status` 筛选、检查 `slug` 与 `redirect_from` 唯一性、解析双链、用 Astro 的 Markdown 处理器取得标题锚点、查找并登记附件、删除 `%%注释%%`、输出公开副本。所有问题收集为带文件和行号的 `Issue`，有任何问题就不写文件。**不负责**：构建网站、Git 操作、Callout 渲染。 |
+| `scripts/lib/export.ts` | 导出的核心逻辑 | 读取原稿、只取 `published/` 文件夹里的笔记、解析并校验它们的 frontmatter、以笔记名作标题、检查 `slug` 与 `redirect_from` 唯一性、解析双链、用 Astro 的 Markdown 处理器取得标题锚点、查找并登记附件、删除 `%%注释%%`、输出公开副本。所有问题收集为带文件和行号的 `Issue`，有任何问题就不写文件。**不负责**：构建网站、Git 操作、Callout 渲染。 |
 | `scripts/export.ts` | `npm run export` 的命令行入口 | 解析参数、调用核心逻辑、打印结果。不含业务规则，输出文字的格式也由核心逻辑提供。 |
 | `scripts/publish.ts` | `npm run release` 的命令行入口 | 串联发布流程：检查 Git 状态 → 导出到 `.publish-tmp/`（与已提交的 `published/` 完全一致时到此结束）→ 用临时副本构建 → 替换 `published/` → 只提交 `published/`（提交信息为 `content: …`）→ 推送 → 等待并报告部署结果。负责失败时停止并说明原因，并把「推送成功」与「上线完成」分开报告。**不负责**：内容规则（委托给 `lib/export.ts`）、部署状态的查询（委托给 `lib/vercel.ts`）。 |
 | `scripts/lib/vercel.ts` | 核实 Vercel 部署 | 通过本机的 `vercel` CLI 按提交哈希查找部署并轮询到终态，返回 ready / failed / timeout / unavailable 四种结果。只查询，不触发部署，也不决定退出码。 |

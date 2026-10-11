@@ -9,7 +9,7 @@ function lines(...content: string[]): string {
   return content.join('\n') + '\n'
 }
 
-// 测试用的最小 Obsidian 库：结构与真实库一致（博客目录、库外附件目录、库外私密笔记）。
+// 测试用的最小 Obsidian 库：结构与真实库一致（博客目录里的 published/ 与 drafts/、库外附件目录、库外私密笔记）。
 // 每个测试把它写入系统临时目录，仓库里不保存样本文章。
 const BASE: Record<string, string> = {
   '.obsidian/app.json': '{ "attachmentFolderPath": "90 system/attachments" }',
@@ -18,11 +18,9 @@ const BASE: Record<string, string> = {
     '',
     '这篇笔记在博客目录之外，任何情况下都不应出现在公开副本里。',
   ),
-  '40 blog/Go/接口与泛型.md': lines(
+  '40 blog/published/Go/接口与泛型.md': lines(
     '---',
-    'title: 接口与泛型怎么选',
     'slug: go-interfaces-vs-generics',
-    'status: published',
     'date: 2026-09-30',
     'updated: 2026-10-01',
     'tags:',
@@ -62,11 +60,12 @@ const BASE: Record<string, string> = {
     '> [!important] 经验法则',
     '> 需要**行为多态**用接口，需要**类型保持**用泛型。详见[[博客搭建记录]]。',
   ),
-  '40 blog/Go/理解接口.md': lines(
+  '40 blog/published/Go/理解接口.md': lines(
     '---',
-    'title: 理解 Go 的接口',
+    // 标题取笔记名，这两个字段即使写了也不起作用
+    'title: 写在 frontmatter 里的标题',
+    'status: draft',
     'slug: go-interfaces',
-    'status: published',
     'date: 2026-09-29',
     'tags:',
     '  - Go',
@@ -96,7 +95,7 @@ const BASE: Record<string, string> = {
     '',
     '行内代码同理：`[[不是链接]]`。',
     '',
-    '![接口示意图](../../90%20system/attachments/interface-diagram.png)',
+    '![接口示意图](../../../90%20system/attachments/interface-diagram.png)',
     '',
     '## 接口值',
     '',
@@ -121,22 +120,15 @@ const BASE: Record<string, string> = {
     '> 接口越小越好。',
   ),
   '40 blog/drafts/未完成的草稿.md': lines(
-    '---',
-    'title: 未完成的草稿',
-    'status: draft',
-    '---',
-    '',
-    '草稿不要求 slug 和 date，也不会被导出。它引用的图片同样不能被导出：',
+    '草稿不在 published/ 里，不需要 frontmatter，也不会被导出。它引用的图片同样不能被导出：',
     '',
     '![[private-screenshot.png]]',
     '',
     '草稿里的失效链接不应阻止发布：[[还没写的文章]]',
   ),
-  '40 blog/写作/博客搭建记录.md': lines(
+  '40 blog/published/写作/博客搭建记录.md': lines(
     '---',
-    'title: 博客搭建记录',
     'slug: building-this-blog',
-    'status: published',
     'date: 2026-09-20',
     'tags:',
     '  - 写作',
@@ -157,13 +149,11 @@ const BASE: Record<string, string> = {
   ),
   '40 blog/旧文.md': lines(
     '---',
-    'title: 一篇已撤回的旧文',
     'slug: old-post',
-    'status: withdrawn',
     'date: 2026-08-01',
     '---',
     '',
-    '撤回后，公开副本和页面都应被移除。',
+    '从 published/ 里挪出来的旧文：metadata 齐全也不会被导出。',
   ),
   '90 system/attachments/interface-diagram.png': '(image)',
   '90 system/attachments/private-screenshot.png': '(image)',
@@ -188,7 +178,7 @@ function post(frontmatter: string, body = '正文'): string {
   return `---\n${frontmatter.trim()}\n---\n\n${body}\n`
 }
 
-const published = (slug: string) => `title: 测试\nslug: ${slug}\nstatus: published\ndate: 2026-10-01`
+const published = (slug: string) => `slug: ${slug}\ndate: 2026-10-01`
 
 /** 断言恰好有一个问题，且定位到指定文件并包含指定文字。 */
 async function assertIssue(v: ReturnType<typeof vault>, file: string, pattern: RegExp) {
@@ -200,7 +190,7 @@ async function assertIssue(v: ReturnType<typeof vault>, file: string, pattern: R
   assert.equal(fs.existsSync(v.outDir), false, '有问题时不应写入任何文件')
 }
 
-test('只导出 published 的文章与其引用的附件', async () => {
+test('只导出 published/ 文件夹里的文章与其引用的附件', async () => {
   const v = vault()
   const result = await v.run()
   assert.deepEqual(result.issues, [])
@@ -211,24 +201,25 @@ test('只导出 published 的文章与其引用的附件', async () => {
   ])
   // 草稿引用的 private-screenshot.png 不在其中
   assert.deepEqual(fs.readdirSync(path.join(v.outDir, 'assets')).sort(), ['interface-diagram.png', '发布-流程.webp'])
-  assert.deepEqual(result.skipped, { draft: 1, withdrawn: 1 })
+  // drafts/ 里的草稿和博客目录根下的旧文
+  assert.equal(result.skipped, 2)
 })
 
-test('frontmatter 只保留白名单字段', async () => {
+test('frontmatter 只保留白名单字段，标题取笔记名', async () => {
   const v = vault()
   await v.run()
   const text = v.read('posts/go-interfaces.md')
-  assert.match(text, /^---\ntitle: 理解 Go 的接口\ndate: 2026-09-29\ntags:\n  - Go\ndescription: 从行为约束理解接口。\n---\n/)
-  assert.doesNotMatch(text, /status|private_note|slug:/)
+  assert.match(text, /^---\ntitle: 理解接口\ndate: 2026-09-29\ntags:\n  - Go\ndescription: 从行为约束理解接口。\n---\n/)
+  assert.doesNotMatch(text, /status|private_note|slug:|写在 frontmatter 里的标题/)
 })
 
 test('双链转换为站内链接：文章名、别名、标题锚点、页内锚点', async () => {
   const v = vault()
   await v.run()
   const text = v.read('posts/go-interfaces-vs-generics.md')
-  assert.match(text, /- 文章名：\[理解 Go 的接口\]\(\/posts\/go-interfaces\/\)/)
+  assert.match(text, /- 文章名：\[理解接口\]\(\/posts\/go-interfaces\/\)/)
   assert.match(text, /- 显示别名：\[上一篇文章\]\(\/posts\/go-interfaces\/\)/)
-  assert.match(text, /- 标题锚点：\[理解 Go 的接口 › 类型断言\]\(\/posts\/go-interfaces\/#类型断言\)/)
+  assert.match(text, /- 标题锚点：\[理解接口 › 类型断言\]\(\/posts\/go-interfaces\/#类型断言\)/)
   assert.match(text, /\| 表格里的别名 \| \[接口\]\(\/posts\/go-interfaces\/\) \|/)
   assert.match(v.read('posts/go-interfaces.md'), /回到\[隐式实现\]\(#隐式实现\)/)
 })
@@ -262,23 +253,33 @@ test('redirect_from 生成重定向表', async () => {
   })
 })
 
-test('撤回：再次导出后公开副本被移除', async () => {
+test('撤回：把原稿挪出 published/，再次导出后公开副本被移除', async () => {
   const v = vault()
   await v.run()
-  const file = path.join(v.root, '40 blog/写作/博客搭建记录.md')
-  fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace('status: published', 'status: withdrawn'))
+  fs.renameSync(
+    path.join(v.root, '40 blog/published/写作/博客搭建记录.md'),
+    path.join(v.root, '40 blog/drafts/博客搭建记录.md'),
+  )
   // 另一篇文章链接到它，需一并去掉引用，否则会被「指向未发布文章」拦下
-  const other = path.join(v.root, '40 blog/Go/接口与泛型.md')
+  const other = path.join(v.root, '40 blog/published/Go/接口与泛型.md')
   fs.writeFileSync(other, fs.readFileSync(other, 'utf8').replace('详见[[博客搭建记录]]。', ''))
   assert.deepEqual((await v.run()).issues, [])
   assert.equal(fs.existsSync(path.join(v.outDir, 'posts/building-this-blog.md')), false)
 })
 
-test('移动原稿、修改标题后，slug 不变则输出路径不变', async () => {
+test('在 published/ 里移动、改名后，slug 不变则输出路径不变，标题跟着笔记名变', async () => {
   const v = vault()
-  fs.renameSync(path.join(v.root, '40 blog/写作/博客搭建记录.md'), path.join(v.root, '40 blog/博客搭建记录.md'))
+  fs.renameSync(
+    path.join(v.root, '40 blog/published/写作/博客搭建记录.md'),
+    path.join(v.root, '40 blog/published/博客搭建记录.md'),
+  )
+  fs.renameSync(
+    path.join(v.root, '40 blog/published/Go/接口与泛型.md'),
+    path.join(v.root, '40 blog/published/Go/接口与泛型怎么选.md'),
+  )
   assert.deepEqual((await v.run()).issues, [])
   assert.ok(fs.existsSync(path.join(v.outDir, 'posts/building-this-blog.md')))
+  assert.match(v.read('posts/go-interfaces-vs-generics.md'), /^---\ntitle: 接口与泛型怎么选\n/)
 })
 
 test('通过软链接读取内容目录', async () => {
@@ -291,77 +292,81 @@ test('通过软链接读取内容目录', async () => {
   assert.equal(result.assets.length, 2)
 })
 
-test('缺少 status', async () => {
-  await assertIssue(vault({ '40 blog/a.md': '# 没有 frontmatter\n' }), 'a.md', /缺少 status/)
+test('published/ 之外的笔记不发布也不校验', async () => {
+  const v = vault({
+    '40 blog/没有 frontmatter.md': '# 随手记\n\n[[不存在的文章]]\n',
+    '40 blog/drafts/坏的 frontmatter.md': '---\nslug: [\n---\n',
+    '40 blog/published-notes/a.md': post(published('not-exported')),
+  })
+  const result = await v.run()
+  assert.deepEqual(result.issues, [])
+  assert.equal(result.posts.length, 3)
+  assert.equal(result.skipped, 5)
 })
 
-test('非法 status', async () => {
-  await assertIssue(vault({ '40 blog/a.md': post('status: public') }), 'a.md', /非法的 status「public」/)
-})
-
-test('published 缺少必填字段时逐项报告', async () => {
-  const { issues } = await vault({ '40 blog/a.md': post('status: published') }).run()
-  assert.deepEqual(issues.map((i) => i.message.slice(0, 8)), ['缺少 title', '缺少 slug', '缺少 date '])
+test('published/ 里的文章缺少必填字段时逐项报告', async () => {
+  const { issues } = await vault({ '40 blog/published/a.md': '正文\n' }).run()
+  assert.deepEqual(issues.map((i) => i.message.slice(0, 8)), ['缺少 slug', '缺少 date '])
 })
 
 test('非法 slug', async () => {
-  await assertIssue(vault({ '40 blog/a.md': post(published('Hello_World')) }), 'a.md', /slug「Hello_World」不合法/)
+  await assertIssue(vault({ '40 blog/published/a.md': post(published('Hello_World')) }), 'published/a.md', /slug「Hello_World」不合法/)
 })
 
 test('重复 slug', async () => {
-  await assertIssue(vault({ '40 blog/a.md': post(published('go-interfaces')) }), 'a.md', /与 Go\/理解接口\.md 重复/)
+  await assertIssue(vault({ '40 blog/published/a.md': post(published('go-interfaces')) }), 'published/a.md', /与 published\/Go\/理解接口\.md 重复/)
 })
 
 test('redirect_from 与现有 slug 冲突', async () => {
-  const v = vault({ '40 blog/a.md': post(`${published('a')}\nredirect_from: go-interfaces`) })
-  await assertIssue(v, 'a.md', /redirect_from「go-interfaces」与 Go\/理解接口\.md 的地址冲突/)
+  const v = vault({ '40 blog/published/a.md': post(`${published('a')}\nredirect_from: go-interfaces`) })
+  await assertIssue(v, 'published/a.md', /redirect_from「go-interfaces」与 published\/Go\/理解接口\.md 的地址冲突/)
 })
 
 test('失效的双链，报告行号', async () => {
-  const v = vault({ '40 blog/a.md': post(published('a'), '见[[不存在的文章]]') })
-  await assertIssue(v, 'a.md', /失效的双链「\[\[不存在的文章\]\]」/)
-  assert.equal((await v.run()).issues[0].line, 8)
+  const v = vault({ '40 blog/published/a.md': post(published('a'), '见[[不存在的文章]]') })
+  await assertIssue(v, 'published/a.md', /失效的双链「\[\[不存在的文章\]\]」/)
+  assert.equal((await v.run()).issues[0].line, 6)
 })
 
 test('双链指向博客目录之外的笔记视为失效，不会公开目标', async () => {
-  await assertIssue(vault({ '40 blog/a.md': post(published('a'), '[[私密笔记]]') }), 'a.md', /失效的双链/)
+  await assertIssue(vault({ '40 blog/published/a.md': post(published('a'), '[[私密笔记]]') }), 'published/a.md', /失效的双链/)
 })
 
 test('双链指向草稿', async () => {
-  const v = vault({ '40 blog/a.md': post(published('a'), '[[未完成的草稿]]') })
-  await assertIssue(v, 'a.md', /指向未发布的文章 drafts\/未完成的草稿\.md（status: draft）/)
+  const v = vault({ '40 blog/published/a.md': post(published('a'), '[[未完成的草稿]]') })
+  await assertIssue(v, 'published/a.md', /指向未发布的文章 drafts\/未完成的草稿\.md（不在 published\/ 文件夹里）/)
 })
 
 test('双链重名歧义', async () => {
   const v = vault({
-    '40 blog/a.md': post(published('a'), '[[理解接口]]'),
-    '40 blog/另一个目录/理解接口.md': post('status: draft'),
+    '40 blog/published/a.md': post(published('a'), '[[理解接口]]'),
+    '40 blog/drafts/理解接口.md': '同名的草稿\n',
   })
   const { issues } = await v.run()
   // 基础库中原有的引用同样会变得有歧义
   assert.ok(issues.length >= 1)
-  assert.ok(issues.every((i) => /有歧义，匹配到：.*Go\/理解接口\.md.*另一个目录\/理解接口\.md/.test(i.message)))
-  assert.ok(issues.some((i) => i.file === 'a.md'))
+  assert.ok(issues.every((i) => /有歧义，匹配到：.*drafts\/理解接口\.md.*published\/Go\/理解接口\.md/.test(i.message)))
+  assert.ok(issues.some((i) => i.file === 'published/a.md'))
 })
 
 test('双链的标题锚点不存在', async () => {
-  const v = vault({ '40 blog/a.md': post(published('a'), '[[理解接口#没有这个标题]]') })
-  await assertIssue(v, 'a.md', /找不到标题「没有这个标题」/)
+  const v = vault({ '40 blog/published/a.md': post(published('a'), '[[理解接口#没有这个标题]]') })
+  await assertIssue(v, 'published/a.md', /找不到标题「没有这个标题」/)
 })
 
 test('不支持块引用与笔记嵌入', async () => {
-  await assertIssue(vault({ '40 blog/a.md': post(published('a'), '[[理解接口#^abc123]]') }), 'a.md', /不支持块引用/)
-  await assertIssue(vault({ '40 blog/a.md': post(published('a'), '![[理解接口]]') }), 'a.md', /不支持笔记嵌入/)
+  await assertIssue(vault({ '40 blog/published/a.md': post(published('a'), '[[理解接口#^abc123]]') }), 'published/a.md', /不支持块引用/)
+  await assertIssue(vault({ '40 blog/published/a.md': post(published('a'), '![[理解接口]]') }), 'published/a.md', /不支持笔记嵌入/)
 })
 
 test('缺失附件', async () => {
-  await assertIssue(vault({ '40 blog/a.md': post(published('a'), '![[missing.png]]') }), 'a.md', /找不到附件「missing\.png」/)
-  await assertIssue(vault({ '40 blog/a.md': post(published('a'), '![x](./missing.png)') }), 'a.md', /找不到附件/)
+  await assertIssue(vault({ '40 blog/published/a.md': post(published('a'), '![[missing.png]]') }), 'published/a.md', /找不到附件「missing\.png」/)
+  await assertIssue(vault({ '40 blog/published/a.md': post(published('a'), '![x](./missing.png)') }), 'published/a.md', /找不到附件/)
 })
 
 test('附件重名歧义', async () => {
   const v = vault({
-    '40 blog/a.md': post(published('a'), '![[interface-diagram.png]]'),
+    '40 blog/published/a.md': post(published('a'), '![[interface-diagram.png]]'),
     '40 blog/images/interface-diagram.png': 'another',
   })
   const { issues } = await v.run()
@@ -370,19 +375,19 @@ test('附件重名歧义', async () => {
 })
 
 test('笔记不能作为附件导出', async () => {
-  const v = vault({ '40 blog/a.md': post(published('a'), '![私密](../30%20domain/私密笔记.md)') })
-  await assertIssue(v, 'a.md', /不支持的附件类型/)
+  const v = vault({ '40 blog/published/a.md': post(published('a'), '![私密](../../30%20domain/私密笔记.md)') })
+  await assertIssue(v, 'published/a.md', /不支持的附件类型/)
 })
 
 test('库之外的文件不能作为附件导出', async () => {
-  const v = vault({ '40 blog/a.md': post(published('a'), '![x](../../outside.png)') })
+  const v = vault({ '40 blog/published/a.md': post(published('a'), '![x](../../../outside.png)') })
   fs.writeFileSync(path.join(v.dir, 'outside.png'), 'x')
-  await assertIssue(v, 'a.md', /位于 Obsidian 库之外/)
+  await assertIssue(v, 'published/a.md', /位于 Obsidian 库之外/)
 })
 
 test('指向笔记的 Markdown 链接', async () => {
-  const v = vault({ '40 blog/a.md': post(published('a'), '[上一篇](Go/理解接口.md)') })
-  await assertIssue(v, 'a.md', /请改用 \[\[双链\]\]/)
+  const v = vault({ '40 blog/published/a.md': post(published('a'), '[上一篇](Go/理解接口.md)') })
+  await assertIssue(v, 'published/a.md', /请改用 \[\[双链\]\]/)
 })
 
 // ---------- 标题锚点 ----------
@@ -390,8 +395,8 @@ test('指向笔记的 Markdown 链接', async () => {
 /** 文章 b 的正文为 body，文章 a 的正文为 link；返回 a 导出后的正文。 */
 async function linkTo(body: string, link: string) {
   const v = vault({
-    '40 blog/b.md': post('title: 乙\nslug: b\nstatus: published\ndate: 2026-10-01', body),
-    '40 blog/a.md': post(published('a'), link),
+    '40 blog/published/b.md': post(published('b'), body),
+    '40 blog/published/a.md': post(published('a'), link),
   })
   const { issues } = await v.run()
   return { issues, text: issues.length === 0 ? v.read('posts/a.md').split('---\n')[2].trim() : '' }
@@ -399,20 +404,18 @@ async function linkTo(body: string, link: string) {
 
 test('注释里的标题不参与锚点计算', async () => {
   const body = '%%\n## 小结\n%%\n\n## 小结\n\n## 标题 %%备注%%\n\n%% ## 只在注释里 %%'
-  assert.equal((await linkTo(body, '[[b#小结]]')).text, '[乙 › 小结](/posts/b/#小结)')
-  assert.equal((await linkTo(body, '[[b#标题]]')).text, '[乙 › 标题](/posts/b/#标题)')
+  assert.equal((await linkTo(body, '[[b#小结]]')).text, '[b › 小结](/posts/b/#小结)')
+  assert.equal((await linkTo(body, '[[b#标题]]')).text, '[b › 标题](/posts/b/#标题)')
   assert.match((await linkTo(body, '[[b#只在注释里]]')).issues[0].message, /找不到标题/)
 })
 
 test('标题里的双链按公开后的显示文字计算锚点', async () => {
   const body = '## 参见 [[理解接口]]\n\n## 另见 [[理解接口|上一篇]]'
-  assert.equal(
-    (await linkTo(body, '[[b#参见 理解 Go 的接口|甲]]')).text,
-    '[甲](/posts/b/#参见-理解-go-的接口)',
-  )
+  // 显示文字就是笔记名，所以 Obsidian 自动生成的写法可以直接用
+  assert.equal((await linkTo(body, '[[b#参见 理解接口|甲]]')).text, '[甲](/posts/b/#参见-理解接口)')
   assert.equal((await linkTo(body, '[[b#另见 上一篇|乙]]')).text, '[乙](/posts/b/#另见-上一篇)')
-  // Obsidian 自动生成的写法用的是文件名，与公开后的标题文字不同：明确报错，而不是生成坏链接
-  assert.match((await linkTo(body, '[[b#参见 理解接口]]')).issues[0].message, /找不到标题/)
+  // 带别名的双链，标题文字是别名而不是笔记名
+  assert.match((await linkTo(body, '[[b#另见 理解接口]]')).issues[0].message, /找不到标题/)
 })
 
 test('识别引用块、列表、缩进和 Setext 写法的标题，重名编号与 Astro 一致', async () => {
@@ -440,7 +443,7 @@ test('识别引用块、列表、缩进和 Setext 写法的标题，重名编号
 
 test('嵌套的代码围栏：内层的短围栏不会提前结束代码块', async () => {
   const body = ['````md', '```', '# 不是标题', '[[不存在的文章]] %%保留%%', '```', '````', '', '## 真标题'].join('\n')
-  const v = vault({ '40 blog/b.md': post('title: 乙\nslug: b\nstatus: published\ndate: 2026-10-01', body) })
+  const v = vault({ '40 blog/published/b.md': post(published('b'), body) })
   assert.deepEqual((await v.run()).issues, [])
   assert.match(v.read('posts/b.md'), /\[\[不存在的文章\]\] %%保留%%/)
   assert.match((await linkTo(body, '[[b#不是标题]]')).issues[0].message, /找不到标题/)
@@ -463,9 +466,9 @@ test('标题里的强调、行内代码、转义和实体', async () => {
 
 test('显示文字用标题渲染后的文字，而不是链接里的写法', async () => {
   const body = '## **重点** 与 `Code`\n\n## Hello World'
-  assert.equal((await linkTo(body, '[[b#**重点** 与 `Code`]]')).text, '[乙 › 重点 与 Code](/posts/b/#重点-与-code)')
-  assert.equal((await linkTo(body, '[[b#hello world]]')).text, '[乙 › Hello World](/posts/b/#hello-world)')
-  const self = vault({ '40 blog/a.md': post(published('a'), '## Hello World\n\n[[#hello world]]') })
+  assert.equal((await linkTo(body, '[[b#**重点** 与 `Code`]]')).text, '[b › 重点 与 Code](/posts/b/#重点-与-code)')
+  assert.equal((await linkTo(body, '[[b#hello world]]')).text, '[b › Hello World](/posts/b/#hello-world)')
+  const self = vault({ '40 blog/published/a.md': post(published('a'), '## Hello World\n\n[[#hello world]]') })
   await self.run()
   assert.match(self.read('posts/a.md'), /\[Hello World\]\(#hello-world\)/)
 })

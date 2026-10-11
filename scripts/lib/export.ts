@@ -8,8 +8,8 @@ import { createSatteriMarkdownProcessor } from '@astrojs/markdown-satteri'
 import { slug as slugify } from 'github-slugger'
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
 
-const STATUSES = ['draft', 'published', 'withdrawn'] as const
-type Status = (typeof STATUSES)[number]
+/** 内容目录下的这个文件夹里的笔记才发布；放在别处的一律不发布，也不校验。 */
+const PUBLISHED_FOLDER = 'published'
 
 const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.avif'])
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
@@ -35,7 +35,8 @@ export interface ExportResult {
   /** 已导出文章的 slug */
   posts: string[]
   assets: string[]
-  skipped: { draft: number; withdrawn: number }
+  /** 不在发布文件夹里、因此没有导出的笔记数 */
+  skipped: number
 }
 
 type RenderMarkdown = Awaited<ReturnType<typeof createSatteriMarkdownProcessor>>['render']
@@ -51,14 +52,17 @@ interface Note {
   /** 相对内容目录、以 `/` 分隔 */
   file: string
   abs: string
+  /** 文章标题：就是 Obsidian 里的笔记名（文件名去掉 `.md`） */
+  title: string
+  /** 是否位于发布文件夹里 */
+  inPublished: boolean
   data: Record<string, unknown>
   body: string
   /** 正文第一行在原文件中的行号 */
   bodyLine: number
   /** frontmatter 无法解析时的错误信息 */
   yamlError?: string
-  status?: Status
-  /** 仅当 status 为 published 且 metadata 全部合法时为 true */
+  /** 仅当位于发布文件夹且 metadata 全部合法时为 true */
   publishable: boolean
   headings?: Heading[]
 }
@@ -67,7 +71,7 @@ export async function exportContent(options: ExportOptions): Promise<ExportResul
   const issues: Issue[] = []
   if (!fs.existsSync(options.contentDir)) {
     issues.push({ file: options.contentDir, message: '内容目录不存在（content 软链接是否已建立？）' })
-    return { issues, posts: [], assets: [], skipped: { draft: 0, withdrawn: 0 } }
+    return { issues, posts: [], assets: [], skipped: 0 }
   }
   // 取真实路径：原稿里的 `../../90 system/attachments/x.webp` 要相对库内的真实位置解析。
   const contentRoot = fs.realpathSync(options.contentDir)
@@ -80,10 +84,7 @@ export async function exportContent(options: ExportOptions): Promise<ExportResul
     issues,
     posts: [],
     assets: [],
-    skipped: {
-      draft: notes.filter((n) => n.status === 'draft').length,
-      withdrawn: notes.filter((n) => n.status === 'withdrawn').length,
-    },
+    skipped: notes.filter((n) => !n.inPublished).length,
   }
 
   const redirects = checkSlugs(published, issues)
@@ -126,7 +127,7 @@ export function formatIssues(issues: Issue[]): string {
 
 export function formatSummary(result: ExportResult): string {
   const { posts, assets, skipped } = result
-  return `${posts.length} 篇文章、${assets.length} 个附件（跳过草稿 ${skipped.draft} 篇、已撤回 ${skipped.withdrawn} 篇）`
+  return `${posts.length} 篇文章、${assets.length} 个附件（${PUBLISHED_FOLDER}/ 之外的 ${skipped} 篇不发布）`
 }
 
 // ---------- 读取与校验 ----------
@@ -153,7 +154,16 @@ function walk(dir: string, accept: (name: string) => boolean): string[] {
 function readNote(abs: string, contentRoot: string): Note {
   const raw = fs.readFileSync(abs, 'utf8').replace(/\r\n/g, '\n')
   const file = path.relative(contentRoot, abs).split(path.sep).join('/')
-  const note: Note = { file, abs, data: {}, body: raw, bodyLine: 1, publishable: false }
+  const note: Note = {
+    file,
+    abs,
+    title: path.basename(file, '.md'),
+    inPublished: file.startsWith(`${PUBLISHED_FOLDER}/`),
+    data: {},
+    body: raw,
+    bodyLine: 1,
+    publishable: false,
+  }
   const match = /^---\n([\s\S]*?)\n---(?:\n|$)/.exec(raw)
   if (!match) return note
   note.body = raw.slice(match[0].length)
@@ -172,17 +182,11 @@ function validateMetadata(note: Note, issues: Issue[]): void {
   const report = (message: string) => issues.push({ file: note.file, message })
   const { data } = note
 
+  // 发布文件夹之外的笔记不公开，写成什么样都不管。
+  if (!note.inPublished) return
+
   if (note.yamlError) return void report(`frontmatter 不是合法的 YAML：${note.yamlError}`)
 
-  if (data.status === undefined) return void report(`缺少 status（可选值：${STATUSES.join(' / ')}）`)
-  if (!STATUSES.includes(data.status as Status)) {
-    return void report(`非法的 status「${String(data.status)}」（可选值：${STATUSES.join(' / ')}）`)
-  }
-  note.status = data.status as Status
-  // 草稿和已撤回的文章不公开，不要求其余字段完整。
-  if (note.status !== 'published') return
-
-  if (typeof data.title !== 'string' || data.title.trim() === '') report('缺少 title')
   if (typeof data.slug !== 'string') report('缺少 slug')
   else if (!SLUG_RE.test(data.slug)) report(`slug「${data.slug}」不合法：只能使用小写英文、数字和连字符`)
   if (typeof data.date !== 'string' || !DATE_RE.test(data.date) || Number.isNaN(Date.parse(data.date))) {
@@ -239,10 +243,10 @@ function checkSlugs(published: Note[], issues: Issue[]): Record<string, string> 
   return Object.fromEntries(Object.entries(redirects).sort(([a], [b]) => a.localeCompare(b)))
 }
 
-/** 只输出白名单字段：原稿中其它属性（status、Obsidian 私有属性等）不进入公开仓库。 */
+/** 只输出白名单字段：原稿中其它属性（Obsidian 私有属性等）不进入公开仓库。标题取笔记名，不读 frontmatter。 */
 function publicFrontmatter(note: Note): Record<string, unknown> {
-  const { title, date, updated, tags, description } = note.data
-  const out: Record<string, unknown> = { title, date }
+  const { date, updated, tags, description } = note.data
+  const out: Record<string, unknown> = { title: note.title, date }
   if (updated) out.updated = updated
   if (Array.isArray(tags) && tags.length > 0) out.tags = tags
   if (typeof description === 'string' && description.trim() !== '') out.description = description
@@ -330,9 +334,9 @@ function parseLink(inner: string): LinkParts {
   return { name: targetPart.slice(0, hashIndex).trim(), heading: targetPart.slice(hashIndex + 1).trim(), alias }
 }
 
-/** 双链的显示文字：别名 > 标题锚点 > 目标文章的 title（而不是文件名，文件名是私有的组织方式）。 */
+/** 双链的显示文字：别名 > 标题锚点 > 目标文章的标题（即笔记名）。 */
 function linkLabel(link: LinkParts, target: Note, headingText: string | undefined): string {
-  const title = String(target.data.title)
+  const { title } = target
   const label = link.alias ?? (link.name === '' ? (headingText ?? title) : headingText ? `${title} › ${headingText}` : title)
   return label.replace(/[[\]]/g, '\\$&')
 }
@@ -524,7 +528,7 @@ function wikilink(inner: string, note: Note, notes: Note[], fail: (message: stri
     }
     target = matches[0]
     if (!target.publishable) {
-      return fail(`双链「[[${name}]]」指向未发布的文章 ${target.file}（status: ${target.status ?? '无效'}）`)
+      return fail(`双链「[[${name}]]」指向未发布的文章 ${target.file}（${target.inPublished ? 'metadata 有问题' : `不在 ${PUBLISHED_FOLDER}/ 文件夹里`}）`)
     }
   }
 
