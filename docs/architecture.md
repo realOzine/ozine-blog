@@ -82,7 +82,7 @@ ozine-blog/
 
 | 文件 | 作用 | 负责范围 |
 | --- | --- | --- |
-| `src/layouts/Base.astro` | 所有页面共用的外壳 | `<head>`（含网站图标）、页头（右上角的主题切换、Twitter 与 GitHub 链接，文章页左上角的返回链接）。引入全局样式、两款等宽字体、KaTeX 的公式样式表和 Vercel 访问统计组件（`@vercel/analytics`）。含两段内联脚本：套用上次选的明暗主题、处理主题切换的点击。没有页脚。 |
+| `src/layouts/Base.astro` | 所有页面共用的外壳 | `<head>`（含网站图标）、页头（右上角的主题切换、Twitter 与 GitHub 链接，文章页左上角的返回链接）。引入全局样式、两款等宽字体、KaTeX 的公式样式表和 Vercel 访问统计组件（`@vercel/analytics`），并在 `<body>` 末尾单独链接霞鹜文楷常规、粗体两份样式表（不挡首屏渲染）。含两段内联脚本：套用上次选的明暗主题、处理主题切换的点击。没有页脚。 |
 | `src/components/PostList.astro` | 文章列表 | 首页使用。每篇三行：标题链接、日期行、摘要。 |
 | `src/components/PostMeta.astro` | 日期行 | 「日期 / N min read」，首页列表和文章详情页共用；文章详情页多显示更新日期和标签。标签只是文字，不是链接（站点没有标签页）。 |
 | `src/components/Toc.astro` | 文章目录 | 渲染二、三级标题的链接，每项带 `depth-2` / `depth-3` 类名；显示位置和样式由 `global.css` 决定。 |
@@ -96,7 +96,7 @@ ozine-blog/
 | 文件 | 作用 | 负责范围 |
 | --- | --- | --- |
 | `astro.config.mjs` | Astro 配置 | 网址末尾斜杠、读取重定向表、Markdown 处理器及其语法开关（取自 `src/lib/markdown.ts`）、Callout、标题锚点、公式三个插件、代码高亮主题、接入 Tailwind、禁止把字体分片内联进样式表。公开副本目录取自 `src/lib/published.ts`。 |
-| `package.json` | 依赖与命令 | 所有 `npm run` 命令的定义。依赖里的 `@fontsource-variable/inconsolata` 和 `@fontsource-variable/source-code-pro` 是随站点部署的两款等宽字体，`katex` 在构建时渲染公式并提供公式的样式表和字体；开发依赖里的 `sharp` 供 `pic/cut-character.mjs` 使用。 |
+| `package.json` | 依赖与命令 | 所有 `npm run` 命令的定义。依赖里的 `@fontsource-variable/inconsolata` 和 `@fontsource-variable/source-code-pro` 是随站点部署的两款等宽字体，`lxgw-wenkai-webfont` 是随站点部署的中文字体（霞鹜文楷），`katex` 在构建时渲染公式并提供公式的样式表和字体；开发依赖里的 `sharp` 供 `pic/cut-character.mjs` 使用。 |
 | `package-lock.json` | 依赖版本锁定 | 由 npm 维护。 |
 | `tsconfig.json` | TypeScript 配置 | 继承 Astro 严格模式；允许脚本用 `.ts` 扩展名互相导入。 |
 | `.vercel/` | Vercel CLI 的项目关联信息 | 由 `vercel link` 生成，Git 忽略。核实部署时 CLI 靠它知道查哪个项目。 |

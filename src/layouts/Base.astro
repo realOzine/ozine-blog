@@ -1,11 +1,15 @@
 ---
 import Analytics from '@vercel/analytics/astro'
 import '../styles/global.css'
-// 两款等宽字体都是可变字重、只含西文分片，样式表很小，直接并进主样式表。汉字用系统黑体，不下载字体。
+// 两款等宽字体都是可变字重、只含西文分片，样式表很小，直接并进主样式表。
 import '@fontsource-variable/inconsolata'
 import '@fontsource-variable/source-code-pro'
 // 公式的排版样式；它的字体只在页面上真有公式时才会被下载。
 import 'katex/dist/katex.min.css'
+// 霞鹜文楷按 unicode-range 分片，浏览器只下载页面用到的那些字。常规和粗体两份 @font-face 列表各一百多 KB，
+// 所以不并进主样式表，而是作为单独的样式表放在 <body> 末尾，不挡住首屏渲染。
+import wenkaiCss from 'lxgw-wenkai-webfont/lxgwwenkai-regular.css?url'
+import wenkaiBoldCss from 'lxgw-wenkai-webfont/lxgwwenkai-bold.css?url'
 import favicon from '../../pic/favicon.png?url'
 import { site } from '../site.config'
 
@@ -70,5 +74,8 @@ const pageTitle = title ? `${title} · ${site.title}` : site.title
         button.hidden = false
       }
     </script>
+
+    <link rel="stylesheet" href={wenkaiCss} />
+    <link rel="stylesheet" href={wenkaiBoldCss} />
   </body>
 </html>

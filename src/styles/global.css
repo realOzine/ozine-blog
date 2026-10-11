@@ -6,9 +6,9 @@
  * 每种颜色有固定的角色（见各行注释），不要拿来随意强调文字。
  */
 @theme {
-  /* 全站唯一的正文和标题字体；汉字回退到系统黑体，一个汉字正好占两个字符格 */
-  --font-body: "Inconsolata Variable", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", monospace;
-  --font-mono: "Source Code Pro Variable", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", monospace;
+  /* 西文用 Inconsolata，汉字用霞鹜文楷（字体没到时先显示系统黑体）；一个汉字正好占两个字符格 */
+  --font-body: "Inconsolata Variable", "LXGW WenKai", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", monospace;
+  --font-mono: "Source Code Pro Variable", "LXGW WenKai", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", monospace;
 
   /* 字符格：横向一个字符宽（9px），纵向一行高（27px）。所有间距都是它们的整数倍或一半 */
   --spacing-cw: 0.5rem;

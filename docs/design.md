@@ -2,7 +2,7 @@
 
 本文档说明站点的视觉设计：气质、字符格、颜色、字体，以及它们在代码里的位置。改样式前先读这里；改了设计就同步更新这里。
 
-相关文档：[`architecture.md`](architecture.md)（文件职责）、[`decisions.md`](decisions.md)（每个选择的取舍，这一版设计是 D35–D39、D41）。
+相关文档：[`architecture.md`](architecture.md)（文件职责）、[`decisions.md`](decisions.md)（每个选择的取舍，这一版设计是 D35–D39、D41–D44）。
 
 ## 1．气质
 
@@ -101,12 +101,13 @@ Shiki 双主题：亮色 `github-light`、暗色 `material-theme-palenight`（�
 
 | 用途 | token | 字体 | 来源 |
 | --- | --- | --- | --- |
-| 正文、标题、界面文字 | `--font-body` | Inconsolata（可变字重），汉字回退到系统黑体（苹方、微软雅黑） | npm 包 `@fontsource-variable/inconsolata`，随站点一起部署 |
+| 正文、标题、界面文字（西文） | `--font-body` | Inconsolata（可变字重） | npm 包 `@fontsource-variable/inconsolata`，随站点一起部署 |
+| 正文、标题、代码里的汉字 | `--font-body`、`--font-mono` 的第二项 | 霞鹜文楷（LXGW WenKai，开源楷体），常规和粗体两个字重；字体没到时先显示系统黑体 | npm 包 `lxgw-wenkai-webfont`，随站点一起部署 |
 | 代码块、行内代码 | `--font-mono` | Source Code Pro（可变字重），0.9rem（16.2px） | npm 包 `@fontsource-variable/source-code-pro`，随站点一起部署 |
 
-- 标题、正文、导航、日期全是同一种字，没有第二种字体（代码除外）。字重只有 400（正文）和 700（标题、加粗、表头）。
-- 不下载中文字体：汉字用读者系统自带的黑体。
-- 斜体只用于文章页的摘要。Inconsolata 和系统黑体都没有真正的斜体字形，是浏览器把正体倾斜出来的。
+- 西文全是同一种等宽字，汉字全是同一种楷体（代码里的西文除外）。字重只有 400（正文）和 700（标题、加粗、表头），霞鹜文楷这两个字重都是真字形，不是合成的。
+- 霞鹜文楷按 `unicode-range` 切成上百个分片，浏览器只下载页面上实际用到的字所在的分片；字体没到时先显示系统黑体（`font-display: swap`）。两份样式表在 `src/layouts/Base.astro` 里作为单独的文件放在 `<body>` 末尾，不并进主样式表：它们的 `@font-face` 列表各有一百多 KB，并进去会挡住首屏渲染。
+- 斜体只用于文章页的摘要。Inconsolata 和霞鹜文楷都没有真正的斜体字形，是浏览器把正体倾斜出来的。
 - 字号只有四级，全部字重 700：h1 32px 绿色，h2 28.57px，h3 22.68px 青色，h4 18px 正文色。**标题不要比 32px 更大**——层级靠颜色区分，不靠大小。
 
 ## 5．各处的样式约定
