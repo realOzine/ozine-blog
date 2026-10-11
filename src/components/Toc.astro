@@ -8,13 +8,11 @@ interface Props {
 const { headings } = Astro.props
 ---
 
-<ul class="space-y-1.5 text-sm">
+<ul>
   {
     headings.map((heading) => (
-      <li class={heading.depth === 3 ? 'pl-4' : ''}>
-        <a href={`#${heading.slug}`} class="text-muted transition duration-200 ease-out hover:text-accent motion-safe:hover:translate-x-1">
-          {heading.text}
-        </a>
+      <li class={`depth-${heading.depth}`}>
+        <a href={`#${heading.slug}`}>{heading.text}</a>
       </li>
     ))
   }

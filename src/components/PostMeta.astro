@@ -1,0 +1,18 @@
+---
+import { formatDate, readingMinutes, type Post } from '../lib/posts'
+
+interface Props {
+  post: Post
+  /** 文章页多显示更新日期和标签 */
+  detail?: boolean
+}
+
+const { post, detail = false } = Astro.props
+const { date, updated, tags } = post.data
+---
+
+<div>
+  <time datetime={formatDate(date)} class="text-red">{formatDate(date)}</time> / {readingMinutes(post)} min read{
+    detail && updated && ` / updated ${formatDate(updated)}`
+  }{detail && tags.length > 0 && ` / ${tags.map((tag) => `#${tag}`).join(' ')}`}
+</div>

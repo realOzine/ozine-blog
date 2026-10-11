@@ -11,3 +11,8 @@ export async function getPosts(): Promise<Post[]> {
 export function formatDate(date: Date): string {
   return date.toISOString().slice(0, 10)
 }
+
+/** 估算的阅读时长：按每分钟 400 字算，不足一分钟算一分钟。 */
+export function readingMinutes(post: Post): number {
+  return Math.max(1, Math.round((post.body?.length ?? 0) / 400))
+}

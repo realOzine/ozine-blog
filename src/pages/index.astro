@@ -1,24 +1,15 @@
 ---
-import { Image } from 'astro:assets'
 import PostList from '../components/PostList.astro'
 import Base from '../layouts/Base.astro'
 import { getPosts } from '../lib/posts'
 import { site } from '../site.config'
-import logo from '../../pic/logo.png'
 
 const posts = await getPosts()
 ---
 
 <Base>
-  <section class="hero flex flex-col gap-x-7 gap-y-4 py-6 sm:flex-row sm:items-center">
-    <Image src={logo} alt={`${site.title}’s avatar`} width={153} densities={[1, 2]} loading="eager" class="figure w-36 shrink-0 transition duration-500 ease-out motion-safe:hover:scale-105 motion-safe:hover:-rotate-3" />
-    <div>
-      <h1 class="font-serif text-2xl font-semibold text-heading">Hi, I’m {site.title}</h1>
-      <p class="mt-3 leading-relaxed text-muted">{site.intro}</p>
-    </div>
-  </section>
-
-  <div class="mt-8">
-    <PostList posts={posts} />
-  </div>
+  <h1>{site.title}</h1>
+  <p>{site.intro}</p>
+  <h2>Posts</h2>
+  <PostList posts={posts} />
 </Base>
