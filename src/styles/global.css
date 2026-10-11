@@ -1,18 +1,55 @@
 @import "tailwindcss";
 
 /*
+ * 破折号和省略号：Inconsolata 里有这两个字形，排在字体栈最前面会把它们抢走，画成贴着基线的西文样子。
+ * 这里单独起一个只含这两个字的字体名，指向霞鹜文楷里装着它们的分片，放到字体栈的最前面。
+ * 分片编号（119、114）取自 lxgw-wenkai-webfont 的样式表，升级这个包后要重新核对。
+ */
+@font-face {
+  font-family: "CJK Punct";
+  font-weight: 400;
+  font-display: swap;
+  src: url("../../node_modules/lxgw-wenkai-webfont/files/lxgwwenkai-regular-subset-119.woff2") format("woff2");
+  unicode-range: U+2014;
+}
+
+@font-face {
+  font-family: "CJK Punct";
+  font-weight: 400;
+  font-display: swap;
+  src: url("../../node_modules/lxgw-wenkai-webfont/files/lxgwwenkai-regular-subset-114.woff2") format("woff2");
+  unicode-range: U+2026;
+}
+
+@font-face {
+  font-family: "CJK Punct";
+  font-weight: 700;
+  font-display: swap;
+  src: url("../../node_modules/lxgw-wenkai-webfont/files/lxgwwenkai-bold-subset-119.woff2") format("woff2");
+  unicode-range: U+2014;
+}
+
+@font-face {
+  font-family: "CJK Punct";
+  font-weight: 700;
+  font-display: swap;
+  src: url("../../node_modules/lxgw-wenkai-webfont/files/lxgwwenkai-bold-subset-114.woff2") format("woff2");
+  unicode-range: U+2026;
+}
+
+/*
  * 设计 token。取值与用法的说明见 docs/design.md。
  * 颜色一律写成 light-dark(亮色, 暗色)；组件里只用这些语义名，不直接写色号。
  * 每种颜色有固定的角色（见各行注释），不要拿来随意强调文字。
  */
 @theme {
   /* 西文用 Inconsolata，汉字用霞鹜文楷（字体没到时先显示系统黑体）；一个汉字正好占两个字符格 */
-  --font-body: "Inconsolata Variable", "LXGW WenKai", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", monospace;
+  --font-body: "CJK Punct", "Inconsolata Variable", "LXGW WenKai", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", monospace;
   --font-mono: "Source Code Pro Variable", "LXGW WenKai", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", monospace;
 
-  /* 字符格：横向一个字符宽（9px），纵向一行高（27px）。所有间距都是它们的整数倍或一半 */
+  /* 字符格：横向一个字符宽（9px），纵向一行高（30px）。所有间距都是它们的整数倍或一半 */
   --spacing-cw: 0.5rem;
-  --spacing-line: 1.5rem;
+  --spacing-line: calc(5rem / 3);
 
   --color-page: light-dark(#fdf7f5, #292d3e);
   /* 代码块底 */
@@ -20,15 +57,15 @@
   --color-body: light-dark(#2e2c2d, #d8e0ec);
   /* 次要文字：日期行、文章摘要。取自原配色里的注释色，暗色调亮到够 4.5:1 */
   --color-muted: light-dark(#676e95, #8f96b8);
-  /* 加粗文字、主题切换链接 */
+  /* 加粗文字、表头、主题切换链接 */
   --color-strong: light-dark(#2e2c2d, #fffefe);
   /* h1 */
   --color-green: light-dark(#5c9e56, #62de84dd);
   /* h2：亮色紫、暗色黄 */
   --color-h2: light-dark(#563cb1, #ffcb6bdd);
   /* h3、行内代码 */
-  --color-cyan: light-dark(#2978a1, #60baec);
-  /* 链接、表头、引用线、滚动条 */
+  --color-cyan: light-dark(#1a7575, #60baec);
+  /* 链接、引用线、页面滚动条 */
   --color-blue: light-dark(#3973a3, #75a1ff);
   /* 日期 */
   --color-red: light-dark(#aa4f28, #f07178);
@@ -57,7 +94,7 @@
   body {
     max-width: 800px;
     margin-inline: auto;
-    padding: calc(var(--spacing-line) / 2) var(--spacing-cw);
+    padding: calc(var(--spacing-line) / 2) calc(var(--spacing-cw) * 2);
     background: var(--color-page);
     color: var(--color-body);
     font-family: var(--font-body);
@@ -84,6 +121,11 @@
   /* h4 和正文同字号，只占一行，否则像一句落单的短段落 */
   h4 {
     line-height: var(--spacing-line);
+  }
+
+  /* 标题里的强调跟着标题的颜色，不变成正文的粗体色 */
+  :is(h1, h2, h3, h4) strong {
+    color: inherit;
   }
 
   h1 {
@@ -202,20 +244,22 @@
   /* 表格没有任何线，列之间只靠右内边距隔开；窄屏时自己横向滚动 */
   table {
     display: block;
+    /* 最后一行单元格自带半行下内边距，下外边距只补半行 */
+    margin-block: var(--spacing-line) calc(var(--spacing-line) / 2);
     overflow-x: auto;
   }
 
   /* 单元格不折行，放不下时整张表横向滚动。Markdown 里指定的对齐方式写在单元格的 style 上，会盖过这里的左对齐 */
   th,
   td {
-    padding: calc(var(--spacing-line) / 2) calc(var(--spacing-cw) * 2) calc(var(--spacing-line) / 2) 0;
+    padding: 0 calc(var(--spacing-cw) * 4) calc(var(--spacing-line) / 2) 0;
     vertical-align: top;
     white-space: nowrap;
   }
 
   th {
     text-align: left;
-    color: var(--color-blue);
+    color: var(--color-strong);
     font-weight: 700;
   }
 
@@ -223,14 +267,14 @@
   code {
     color: var(--color-cyan);
     font-family: var(--font-mono);
-    font-size: 0.9rem;
+    font-size: 0.9em;
   }
 
   /* 按键：和原站的按钮一样用方括号括起来，不画键帽 */
   kbd {
     color: var(--color-strong);
     font-family: var(--font-mono);
-    font-size: 0.9rem;
+    font-size: 0.9em;
     font-weight: 700;
   }
 
@@ -259,6 +303,16 @@
   }
 
   .footnotes {
+    margin-top: calc(var(--spacing-line) * 2);
+    color: var(--color-muted);
+  }
+
+  .footnotes li > p {
+    margin-block: 0;
+  }
+
+  /* 文章末尾的回复链接：和正文（或脚注）隔开两行，免得读成最后一条脚注 */
+  main > footer {
     margin-top: calc(var(--spacing-line) * 2);
   }
 
@@ -295,6 +349,11 @@
   ::-webkit-scrollbar-thumb {
     border: 7px solid transparent;
     background: var(--color-blue) content-box;
+  }
+
+  /* 代码块、表格、公式自己的横向滚动条用次要色：蓝色的一条横线会被读成分隔线 */
+  :is(pre, table, .katex-display)::-webkit-scrollbar-thumb {
+    background: var(--color-muted) content-box;
   }
 
   /* 紧跟标题的元素不留上外边距（这条要排在各元素自己的外边距之后） */
