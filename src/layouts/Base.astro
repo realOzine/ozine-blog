@@ -1,11 +1,11 @@
 ---
 import Analytics from '@vercel/analytics/astro'
+// 公式的排版样式；它的字体只在页面上真有公式时才会被下载。必须排在 global.css 前面：后者要盖掉它的字号和间距。
+import 'katex/dist/katex.min.css'
 import '../styles/global.css'
 // 两款等宽字体都是可变字重、只含西文分片，样式表很小，直接并进主样式表。
 import '@fontsource-variable/inconsolata'
 import '@fontsource-variable/source-code-pro'
-// 公式的排版样式；它的字体只在页面上真有公式时才会被下载。
-import 'katex/dist/katex.min.css'
 // 霞鹜文楷按 unicode-range 分片，浏览器只下载页面用到的那些字。常规和粗体两份 @font-face 列表各一百多 KB，
 // 所以不并进主样式表，而是作为单独的样式表放在 <body> 末尾，不挡住首屏渲染。
 import wenkaiCss from 'lxgw-wenkai-webfont/lxgwwenkai-regular.css?url'

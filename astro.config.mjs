@@ -23,7 +23,7 @@ export default defineConfig({
   markdown: {
     processor: satteri({ features: markdownFeatures, hastPlugins: [callout, headingAnchor, math] }),
     shikiConfig: {
-      themes: { light: 'github-light', dark: 'material-theme-palenight' },
+      themes: { light: 'github-light-high-contrast', dark: 'material-theme-palenight' },
       // 不写死行内颜色，只输出 --shiki-light / --shiki-dark 变量，由 global.css 按明暗选择。
       defaultColor: false,
     },

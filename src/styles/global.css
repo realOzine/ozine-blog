@@ -62,15 +62,28 @@
     color: var(--color-body);
     font-family: var(--font-body);
     line-height: var(--spacing-line);
+    /* 长网址之类不带空格的长串放不下时在中间断开，不把页面撑宽 */
+    overflow-wrap: break-word;
   }
 
-  /* 标题上下不留外边距，靠两行格的行高留出空间；层级靠颜色区分，不靠大小 */
+  /* 层级靠颜色区分，不靠大小。标题占两行格；正文里的标题上方再空一行、下方不空，让它贴着自己管的内容 */
   h1,
   h2,
   h3,
   h4 {
     font-weight: 700;
     line-height: calc(var(--spacing-line) * 2);
+  }
+
+  h2,
+  h3,
+  h4 {
+    margin-top: var(--spacing-line);
+  }
+
+  /* h4 和正文同字号，只占一行，否则像一句落单的短段落 */
+  h4 {
+    line-height: var(--spacing-line);
   }
 
   h1 {
@@ -125,6 +138,11 @@
 
   li > :is(ul, ol) {
     margin-block: 0;
+  }
+
+  /* 列表项里的第一段不留上外边距，否则它会穿出列表，把整个列表往下顶一行 */
+  li > p:first-child {
+    margin-top: 0;
   }
 
   ul {
@@ -230,18 +248,6 @@
     color: inherit;
   }
 
-  /* 公式是页面上唯一的衬线字；KaTeX 默认放大到 1.21 倍，这里收一点，免得比正文大太多 */
-  .katex {
-    font-size: 1.1em;
-  }
-
-  /* 块级公式上下各空一行，放不下时自己横向滚动 */
-  .katex-display {
-    margin-block: var(--spacing-line);
-    overflow-x: auto;
-    overflow-y: hidden;
-  }
-
   /* 脚注区的标题只给读屏软件；脚注和正文之间多空一行 */
   .sr-only {
     position: absolute;
@@ -290,12 +296,46 @@
     border: 7px solid transparent;
     background: var(--color-blue) content-box;
   }
+
+  /* 紧跟标题的元素不留上外边距（这条要排在各元素自己的外边距之后） */
+  :is(h2, h3, h4) + *,
+  :is(h2, h3, h4) + .callout {
+    margin-top: 0;
+  }
 }
 
 /* ---------- 代码高亮：Shiki 双主题，跟随明暗 ---------- */
 
 .astro-code span {
   color: light-dark(var(--shiki-light), var(--shiki-dark));
+}
+
+/* 两套主题的注释色在代码块底上都不到 4.5:1（暗 2.99、亮 3.68），各换一个够的。
+   颜色写在行内样式里，只能这样按值匹配着盖掉；换代码高亮主题后要重新核对这两个色值 */
+.astro-code span[style*="--shiki-dark:#676E95"] {
+  --shiki-dark: var(--color-muted) !important;
+}
+
+.astro-code span[style*="--shiki-light:#66707B"] {
+  --shiki-light: #575d7c !important;
+}
+
+/* ---------- 公式 ---------- */
+
+/* 这几条必须写在 @layer base 外面，并且 Base.astro 里要先引入 KaTeX 的样式表再引入本文件：
+   KaTeX 的样式不分层，分层的规则盖不过它；同样不分层时，后引入的才赢 */
+
+/* 公式是页面上唯一的衬线字；KaTeX 默认放大到 1.21 倍，这里收一点，免得比正文大太多 */
+.katex {
+  font-size: 1.1em;
+}
+
+/* 块级公式上下各空一行（一半外边距、一半内边距：内边距给上下标留出地方，不被裁掉），放不下时自己横向滚动 */
+.katex-display {
+  margin-block: calc(var(--spacing-line) / 2);
+  padding-block: calc(var(--spacing-line) / 2);
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 /* ---------- 页头 ---------- */
