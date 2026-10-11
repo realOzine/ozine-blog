@@ -39,10 +39,11 @@ const pageTitle = title ? `${title} · ${site.title}` : site.title
   </head>
   <body>
     <header class="nav">
-      {back && <a href="/">&lt; {site.title}</a>}
+      {back && <a href="/">&lt; {site.name}</a>}
       <div>
         <!-- 文字是「要切到的那个主题」的名字，由下面的脚本填；脚本没运行时按钮不出现 -->
         <button id="theme" type="button" hidden></button>
+        <a href={site.twitter} target="_blank" rel="me noopener">twitter</a>
         <a href={site.github} target="_blank" rel="me noopener">github</a>
       </div>
     </header>

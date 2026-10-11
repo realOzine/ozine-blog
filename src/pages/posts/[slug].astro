@@ -4,6 +4,7 @@ import PostMeta from '../../components/PostMeta.astro'
 import Toc from '../../components/Toc.astro'
 import Base from '../../layouts/Base.astro'
 import { getPosts, type Post } from '../../lib/posts'
+import { site } from '../../site.config'
 
 export async function getStaticPaths() {
   const posts = await getPosts()
@@ -27,7 +28,7 @@ const { title, description } = post.data
   <article>
     <h1>{title}</h1>
     <PostMeta post={post} detail />
-    {description && <p>{description}</p>}
+    {description && <p class="text-muted italic">{description}</p>}
 
     {/* 同一份目录：窄屏是正文开头的列表，宽屏由 global.css 固定到内容栏左侧 */}
     {
@@ -40,4 +41,13 @@ const { title, description } = post.data
 
     <Content />
   </article>
+
+  {/* 文章末尾：回复方式一行，返回首页一行。邮件主题预填文章标题 */}
+  <footer>
+    <p class="flex gap-cw">
+      <a href={`mailto:${site.email}?subject=${encodeURIComponent(`Re: ${title}`)}`}>reply via email</a>
+      <a href={site.twitter} target="_blank" rel="me noopener">twitter</a>
+    </p>
+    <p><a href="/">&lt; {site.name}</a></p>
+  </footer>
 </Base>

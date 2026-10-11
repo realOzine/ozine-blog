@@ -18,6 +18,8 @@
   /* 代码块底 */
   --color-surface: light-dark(#e2dbd8, #242736);
   --color-body: light-dark(#2e2c2d, #d8e0ec);
+  /* 次要文字：日期行、文章摘要。取自原配色里的注释色，暗色调亮到够 4.5:1 */
+  --color-muted: light-dark(#676e95, #8f96b8);
   /* 加粗文字、主题切换链接 */
   --color-strong: light-dark(#2e2c2d, #fffefe);
   /* h1 */
