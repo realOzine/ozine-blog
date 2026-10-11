@@ -332,6 +332,7 @@
 }
 
 /* 宽屏：目录固定在内容栏左侧、右对齐，内容栏右移 100px 给它让位 */
+/* 1300px 这个数在 src/pages/posts/[slug].astro 末尾的脚本里还有一份，要一起改 */
 @media (min-width: 1300px) {
   body:has(.toc) {
     margin-left: calc(50% - 300px);

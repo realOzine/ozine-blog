@@ -50,4 +50,30 @@ const { title, description } = post.data
     </p>
     <p><a href="/">&lt; {site.name}</a></p>
   </footer>
+
+  {/*
+    窗口宽度跨过 1300px 时，目录在「悬浮在左侧」和「排在正文开头」之间切换，正文会整体上下移动一个目录的高度。
+    这里记住读者眼前的那个段落，切换后把它滚回原来的位置。浏览器自带的滚动锚定管不了这种情况：
+    Chrome 里内容栏同时改了外边距，锚定会被取消；Safari 没有滚动锚定。
+  */}
+  {
+    toc.length > 0 && (
+      <script is:inline>
+        {
+          const blocks = [...document.querySelectorAll('article > :not(.toc)')]
+          let anchor, top
+          const remember = () => {
+            anchor = blocks.find((el) => el.getBoundingClientRect().bottom > 0)
+            top = anchor?.getBoundingClientRect().top
+          }
+          addEventListener('scroll', remember, { passive: true })
+          matchMedia('(min-width: 1300px)').addEventListener('change', () => {
+            if (anchor) scrollBy(0, anchor.getBoundingClientRect().top - top)
+            remember()
+          })
+          remember()
+        }
+      </script>
+    )
+  }
 </Base>
