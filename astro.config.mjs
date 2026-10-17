@@ -18,6 +18,7 @@ function readRedirects() {
 }
 
 export default defineConfig({
+  site: 'https://ozine.me',
   trailingSlash: 'always',
   redirects: readRedirects(),
   markdown: {

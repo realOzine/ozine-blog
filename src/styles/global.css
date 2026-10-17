@@ -400,17 +400,27 @@
 /* ---------- 页头 ---------- */
 
 /* 弹性布局会吃掉链接之间的空格，用 gap 补回一个字符 */
+/* 窄屏放不下时整组链接换到下一行，行距仍是一行，链接本身不折断 */
 .nav {
   display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
   justify-content: space-between;
-  gap: var(--spacing-cw);
+  gap: 0 var(--spacing-cw);
   margin-bottom: var(--spacing-line);
 }
 
 .nav > div {
   display: flex;
-  gap: var(--spacing-cw);
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 0 var(--spacing-cw);
   margin-left: auto;
+}
+
+.nav a {
+  white-space: nowrap;
 }
 
 .nav button {

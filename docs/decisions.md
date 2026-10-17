@@ -117,7 +117,7 @@
 - **得**：「推送成功」与「上线完成」分开报告，部署失败能在命令里直接看到。
 - **失**：依赖本机已登录的 `vercel` CLI 和 `.vercel/` 关联（换电脑要重新 `vercel login` 与 `vercel link`）。CLI 不可用或等待超时时只提示「部署状态未核实」并正常退出，不算失败——此时仍需人工确认。
 - **注意**：实测 `vercel ls --meta githubCommitSha=…` 对未知哈希也会返回最近一次部署，所以程序拿到列表后按哈希再筛一遍，避免把上一次部署误报成本次上线。
-- **现状（2026-10-01）**：Vercel 项目 `ozine-blog` 已关联 GitHub 仓库，推送 `main` 自动部署到 <https://ozine-blog.vercel.app>。
+- **现状（2026-10-01）**：Vercel 项目 `ozine-blog` 已关联 GitHub 仓库，推送 `main` 自动部署到 <https://ozine-blog.vercel.app>。2026-10-17 起改为 <https://ozine.me>（D48）。
 
 ### D16 脚本用 Node 原生运行 TypeScript，不引入 tsx 等运行器
 
@@ -146,9 +146,9 @@
 - 最初在规划的四个页面之外增加了 `/tags/` 和 `/tags/{标签}/`；它们和 `/posts/` 列表页后来都删除了（D32）。
 - 文章目录只列二、三级标题：桌面端在右侧固定，手机端折叠在正文上方。
 
-### D20 未配置 `site` 网址，未做 RSS / sitemap / Open Graph
+### D20 未做 RSS / sitemap / Open Graph
 
-- 域名未定，且这些不在首版范围内。定下域名后在 `astro.config.mjs` 加 `site`。
+- 不在首版范围内。`site` 已在 D48 配为 `https://ozine.me`，以后做这些时直接可用。
 
 ### D21 TypeScript 固定在 6.x
 
@@ -351,9 +351,16 @@
 - **16 文章结尾**：脚注用次要色、条目之间不再空行；回复链接和上文隔开两行。
 - **失**：行高变大后每屏能看的行数少了约一成，页面整体变长；`CJK Punct` 写死了字体包里的分片编号（119、114），升级 `lxgw-wenkai-webfont` 后要核对；亮色下表头和正文同色，只靠粗体区分，而楷体的粗体不重（第 13 条没有应用）。
 
+### D48 自定义域名 ozine.me，三个 Vercel 项目共用
+
+- **选择**：域名 `ozine.me`（DNS 在 Cloudflare）。`ozine.me` → ozine-blog，`www.ozine.me` 308 跳转到 `ozine.me`；`design.ozine.me` → web-design-library，`book.ozine.me` → book-library。Cloudflare 上是四条 CNAME，指向 Vercel 给每个项目的专属目标，设为 DNS only（橙色云朵代理会干扰 Vercel 签证书）。`astro.config.mjs` 配 `site: 'https://ozine.me'`。页头加 `book`、`design` 两个链接，和 `twitter`、`github` 一样在新标签页打开。
+- **放弃**：让 `*.vercel.app` 地址跳转到新域名——你要的是只有自己的域名能访问。
+- **得**：只有一个公开地址，不会有重复收录；部署预览只有登录 Vercel 的人能看。
+- **失**：以前分享出去的 `ozine-blog.vercel.app` 链接直接失效，不跳转；域名出问题（DNS 配错、忘了续费）时网站没有备用地址。`npm run release` 结束时打印的部署地址受部署保护，只有登录后能打开；脚本本身只读部署状态，不受影响。
+- **现状（2026-10-17）**：四个域名已验证、HTTPS 已签发，`www` 跳转已生效。三个项目的 `*.vercel.app` 固定地址已删除（访问返回 404）；三个项目都开了 Vercel Authentication 的 Standard Protection，每次部署的地址要登录 Vercel 才能看，自定义域名不受影响。
+
 ## 6．仍待你决定
 
 - 设计审查剩下的问题：中等的 7、8、13、17、18，轻微的 20–27（D47）。
 - 站点名称、简介（D19）。视觉风格见 D35–D38 和 `docs/design.md`。
 - 角色图的去留（D35）：`pic/logo.png`、`pic/character.png` 现在不被站点引用，可以删掉，也可以留着。
-- 自定义域名（D20）。目前使用 Vercel 默认域名 `ozine-blog.vercel.app`，`astro.config.mjs` 尚未配置 `site`。

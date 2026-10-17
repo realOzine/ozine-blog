@@ -66,7 +66,7 @@ ozine-blog/
 | 文件 | 作用 | 负责范围 |
 | --- | --- | --- |
 | `src/content.config.ts` | 定义 `posts` 内容集合 | 指定从 `published/posts/` 读取文章，并声明公开 frontmatter 的类型。新增公开字段时要与 `scripts/lib/export.ts` 的白名单一起改。 |
-| `src/site.config.ts` | 站点级文案 | 站点名、返回链接上的短名字、简介、首页文案（英文）、GitHub 与 Twitter 地址、文章末尾回复用的邮箱。改文案只需改这里。 |
+| `src/site.config.ts` | 站点级文案 | 站点名、返回链接上的短名字、简介、首页文案（英文）、页头链接（book、design 两个子站，GitHub 与 Twitter）的地址、文章末尾回复用的邮箱。改文案只需改这里。 |
 | `src/lib/published.ts` | 公开副本目录的位置 | 唯一定义 `PUBLISHED_DIR` 环境变量及其默认值 `./published` 的地方，供 `astro.config.mjs` 和 `src/content.config.ts` 共用。 |
 | `src/lib/markdown.ts` | Markdown 的语法开关 | 目前只有一项：开启数学公式。`astro.config.mjs` 和 `scripts/lib/export.ts` 都从这里取，保证两边解析出的标题一致。这是 `scripts/` 唯一依赖 `src/` 的地方。 |
 | `src/lib/posts.ts` | 文章的查询 | 所有页面都通过它取文章（按日期倒序），保证各处公开范围一致。还提供日期格式化和阅读时长的估算。 |
@@ -95,7 +95,7 @@ ozine-blog/
 
 | 文件 | 作用 | 负责范围 |
 | --- | --- | --- |
-| `astro.config.mjs` | Astro 配置 | 网址末尾斜杠、读取重定向表、Markdown 处理器及其语法开关（取自 `src/lib/markdown.ts`）、Callout、标题锚点、公式三个插件、代码高亮主题、接入 Tailwind、禁止把字体分片内联进样式表。公开副本目录取自 `src/lib/published.ts`。 |
+| `astro.config.mjs` | Astro 配置 | 站点网址 `site`（`https://ozine.me`）、网址末尾斜杠、读取重定向表、Markdown 处理器及其语法开关（取自 `src/lib/markdown.ts`）、Callout、标题锚点、公式三个插件、代码高亮主题、接入 Tailwind、禁止把字体分片内联进样式表。公开副本目录取自 `src/lib/published.ts`。 |
 | `package.json` | 依赖与命令 | 所有 `npm run` 命令的定义。依赖里的 `@fontsource-variable/inconsolata` 和 `@fontsource-variable/source-code-pro` 是随站点部署的两款等宽字体，`lxgw-wenkai-webfont` 是随站点部署的中文字体（霞鹜文楷），`katex` 在构建时渲染公式并提供公式的样式表和字体；开发依赖里的 `sharp` 供 `pic/cut-character.mjs` 使用。 |
 | `package-lock.json` | 依赖版本锁定 | 由 npm 维护。 |
 | `tsconfig.json` | TypeScript 配置 | 继承 Astro 严格模式；允许脚本用 `.ts` 扩展名互相导入。 |
