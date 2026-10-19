@@ -1,0 +1,51 @@
+---
+import Base from '../layouts/Base.astro'
+import { site } from '../site.config'
+
+// 数字是写死的，子站内容变了要手动改
+const projects = [
+  {
+    url: site.book,
+    name: "ozine's book library",
+    description:
+      '个人技术书架：Go 后端、SEO 与大模型方向的七本书，共 250 篇正文，配可运行的示例和交互实验，目标是把知识读懂、把代码看清。',
+    items: ['Go 后端知识地图 · 115 篇', 'SEO 系统教程、AI SEO 实践指南 · 36 篇', '从计算图到 GPT 等 4 本大模型书 · 99 篇'],
+  },
+  {
+    url: site.design,
+    name: "ozine's design library",
+    description:
+      '网页设计参考库：专收赛博、宇宙、动漫与复古风格这类有世界感的界面，按页面功能分类，每个案例都附作者、来源和设计点评。',
+    items: ['已审核收录 · 162 个页面', '待核验候选 · 328 个', '目标 · 1700 个'],
+  },
+  {
+    url: 'https://github.com/realOzine/x-oldest',
+    name: 'X Oldest',
+    description:
+      'Chrome 插件：在 X 用户主页加一个「最早」标签，从第一条帖子开始按时间顺序往后读，界面和 X 原生一致，数据只留在本地。',
+    items: [
+      '改用带时间范围的搜索，绕开时间线只能回溯有限条数的限制',
+      '复用页面里的登录状态和请求签名，不申请任何权限',
+      '读过的帖子和阅读位置缓存在本地 IndexedDB',
+    ],
+  },
+]
+---
+
+<Base title="Projects" back>
+  <h1>Projects</h1>
+  {
+    projects.map((project) => (
+      <article>
+        <h2>{project.name}</h2>
+        <p>
+          $ open <a href={project.url} target="_blank" rel="noopener">{project.url.replace('https://', '')}</a>
+        </p>
+        <p>{project.description}</p>
+        <ul>
+          {project.items.map((item) => <li>{item}</li>)}
+        </ul>
+      </article>
+    ))
+  }
+</Base>

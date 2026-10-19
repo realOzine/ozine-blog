@@ -66,7 +66,7 @@ ozine-blog/
 | 文件 | 作用 | 负责范围 |
 | --- | --- | --- |
 | `src/content.config.ts` | 定义 `posts` 内容集合 | 指定从 `published/posts/` 读取文章，并声明公开 frontmatter 的类型。新增公开字段时要与 `scripts/lib/export.ts` 的白名单一起改。 |
-| `src/site.config.ts` | 站点级文案 | 站点名、返回链接上的短名字、简介、首页文案（英文）、页头链接（book、design 两个子站，GitHub 与 Twitter）的地址、文章末尾回复用的邮箱。改文案只需改这里。 |
+| `src/site.config.ts` | 站点级文案 | 站点名、返回链接上的短名字、简介、首页文案（英文）、项目页上 book、design 两个子站的地址，页头的 GitHub 与 Twitter的地址、文章末尾回复用的邮箱。改文案只需改这里。 |
 | `src/lib/published.ts` | 公开副本目录的位置 | 唯一定义 `PUBLISHED_DIR` 环境变量及其默认值 `./published` 的地方，供 `astro.config.mjs` 和 `src/content.config.ts` 共用。 |
 | `src/lib/markdown.ts` | Markdown 的语法开关 | 目前只有一项：开启数学公式。`astro.config.mjs` 和 `scripts/lib/export.ts` 都从这里取，保证两边解析出的标题一致。这是 `scripts/` 唯一依赖 `src/` 的地方。 |
 | `src/lib/posts.ts` | 文章的查询 | 所有页面都通过它取文章（按日期倒序），保证各处公开范围一致。还提供日期格式化和阅读时长的估算。 |
@@ -76,13 +76,15 @@ ozine-blog/
 | 文件 | 网址 | 负责范围 |
 | --- | --- | --- |
 | `src/pages/index.astro` | `/` | 站名、简介和全部文章的列表。 |
+| `src/pages/projects.astro` | `/projects/` | 项目页：每个项目是 h2 名称、一行 `$ open 地址`（去掉 https:// 的项目地址，链到项目网站或仓库，新标签页打开）、一段简介和几条要点。项目列表和里面的数字就写在这个文件里，没有图片。 |
+| `src/pages/rss.xml.ts` | `/rss.xml` | RSS 2.0 订阅源：经 `getPosts` 取全部文章，每篇只有标题、链接、发布日期和摘要（没有摘要就不写），不含全文。 |
 | `src/pages/posts/[slug].astro` | `/posts/{slug}/` | 文章详情：标题、日期行、摘要、目录、正文，以及正文之后的回复链接（邮件、Twitter）和返回首页的链接。有目录的文章末尾带一段内联脚本：窗口宽度跨过 1300px、目录换位置时，保持读者的阅读位置不动。目录只渲染一份，摆在哪里由 `global.css` 按视口宽度决定。 |
 
 ### 布局、组件、插件、样式
 
 | 文件 | 作用 | 负责范围 |
 | --- | --- | --- |
-| `src/layouts/Base.astro` | 所有页面共用的外壳 | `<head>`（含网站图标）、页头（右上角的主题切换、Twitter 与 GitHub 链接，文章页左上角的返回链接）。引入全局样式、两款等宽字体、KaTeX 的公式样式表和 Vercel 访问统计组件（`@vercel/analytics`），并在 `<body>` 末尾单独链接霞鹜文楷常规、粗体两份样式表（不挡首屏渲染）。含两段内联脚本：套用上次选的明暗主题、处理主题切换的点击。没有页脚。 |
+| `src/layouts/Base.astro` | 所有页面共用的外壳 | `<head>`（含网站图标和指向 `/rss.xml` 的订阅源声明）、页头（右上角的主题切换、projects、Twitter、GitHub 与 RSS 链接，文章页左上角的返回链接）。引入全局样式、两款等宽字体、KaTeX 的公式样式表和 Vercel 访问统计组件（`@vercel/analytics`），并在 `<body>` 末尾单独链接霞鹜文楷常规、粗体两份样式表（不挡首屏渲染）。含两段内联脚本：套用上次选的明暗主题、处理主题切换的点击。没有页脚。 |
 | `src/components/PostList.astro` | 文章列表 | 首页使用。每篇三行：标题链接、日期行、摘要。 |
 | `src/components/PostMeta.astro` | 日期行 | 「日期 / N min read」，首页列表和文章详情页共用；文章详情页多显示更新日期和标签。标签只是文字，不是链接（站点没有标签页）。 |
 | `src/components/Toc.astro` | 文章目录 | 渲染二、三级标题的链接，每项带 `depth-2` / `depth-3` 类名；显示位置和样式由 `global.css` 决定。 |
