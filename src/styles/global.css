@@ -352,7 +352,7 @@
   }
 
   /* 代码块、表格、公式自己的横向滚动条用次要色：蓝色的一条横线会被读成分隔线 */
-  :is(pre, table, .katex-display)::-webkit-scrollbar-thumb {
+  :is(pre, table, .katex-display, .mermaid)::-webkit-scrollbar-thumb {
     background: var(--color-muted) content-box;
   }
 
@@ -395,6 +395,19 @@
   padding-block: calc(var(--spacing-line) / 2);
   overflow-x: auto;
   overflow-y: hidden;
+}
+
+/* Mermaid 图：构建时渲染的 SVG（src/plugins/mermaid.ts）。上下各空一行，放不下时自己横向滚动，不缩小文字。
+   要写在 @layer base 之外：SVG 里自带的 text { font-family } 不在层里，层里的规则盖不过它 */
+.mermaid {
+  margin: var(--spacing-line) 0;
+  overflow-x: auto;
+}
+.mermaid svg {
+  display: block;
+}
+.mermaid text {
+  font-family: var(--font-body);
 }
 
 /* ---------- 页头 ---------- */

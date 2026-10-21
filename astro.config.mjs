@@ -7,6 +7,7 @@ import { publishedDir } from './src/lib/published.ts'
 import { callout } from './src/plugins/callout.ts'
 import { headingAnchor } from './src/plugins/heading-anchor.ts'
 import { math } from './src/plugins/math.ts'
+import { mermaid } from './src/plugins/mermaid.ts'
 
 // 旧 slug → 新地址，由导出脚本根据 frontmatter 的 redirect_from 生成。
 function readRedirects() {
@@ -22,7 +23,9 @@ export default defineConfig({
   trailingSlash: 'always',
   redirects: readRedirects(),
   markdown: {
-    processor: satteri({ features: markdownFeatures, hastPlugins: [callout, headingAnchor, math] }),
+    processor: satteri({ features: markdownFeatures, hastPlugins: [callout, headingAnchor, math, mermaid] }),
+    // math、mermaid 不做语法高亮，留给 src/plugins/ 里的插件渲染
+    syntaxHighlight: { type: 'shiki', excludeLangs: ['math', 'mermaid'] },
     shikiConfig: {
       themes: { light: 'github-light-high-contrast', dark: 'material-theme-palenight' },
       // 不写死行内颜色，只输出 --shiki-light / --shiki-dark 变量，由 global.css 按明暗选择。

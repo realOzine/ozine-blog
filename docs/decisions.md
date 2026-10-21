@@ -371,6 +371,12 @@
 - **放弃**：项目配图。试过两套——子站首页截图，以及按本站配色画成图片的终端画面——你选了后者的样子，但要文字而不是图片。图片不随明暗主题切换，也违背 `docs/design.md` 不放插画的规则。还放弃了在页头平铺子站链接：每加一个项目页头就更挤。
 - **失**：简介和要点里的数字（250 篇、162 个页面……）是写死的，子站内容变了要手动改 `src/pages/projects.astro`。
 
+### D51 Mermaid 图构建时渲染成 SVG（beautiful-mermaid）
+
+- **选择**：`src/plugins/mermaid.ts` 在构建时用 `beautiful-mermaid` 把 ` ```mermaid ` 代码块渲染成内联 SVG，和公式一样不在浏览器里跑脚本。`astro.config.mjs` 让 Shiki 跳过 `mermaid`（和 `math` 一样），否则插件拿到的是高亮后的代码。颜色直接传 `var(--color-page)`、`var(--color-body)`、`var(--color-muted)`、`var(--color-surface)`，明暗切换跟着 `light-dark()` 走；库塞进 SVG 的 Google Fonts `@import` 删掉，字体用正文字体。库按 13px 排版，插件把宽高换成 em，让 13px 对应正文的 0.9em（与代码块同大）：宽图横向滚动，不缩小文字。
+- **放弃**：官方 `mermaid` 在浏览器里渲染——要加载约 1MB 脚本、页面加载后才出图，违背“只有统计和三段小脚本”；`rehype-mermaid` / `mermaid-cli` 在构建时用无头浏览器渲染——Vercel 构建要装 Chromium，又慢又脆；渲染成 ASCII 字符画——中文字宽和 Inconsolata 的半角不是严格 2:1，方框会对不齐。
+- **失**：beautiful-mermaid 只支持流程图、状态图、时序图、类图、ER 图和 XY 图，别的类型（甘特图、饼图……）会构建失败；它的语法覆盖和布局不完全等同官方 Mermaid，Obsidian 里看到的样子和网页上不完全一样。文字宽度是按库自己的字体估算的，换成等宽字体后个别标签（如时序图里两行的注释）会略偏出框。横向的长流程图（LR）要横向滚动才能看完。
+
 ## 6．仍待你决定
 
 - 设计审查剩下的问题：中等的 7、8、13、17、18，轻微的 20–27（D47）。

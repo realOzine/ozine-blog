@@ -134,7 +134,8 @@ Shiki 双主题：亮色 `github-light-high-contrast`、暗色 `material-theme-p
 - **折叠内容**（正文里直接写的 `<details>`）：上下各空一行，没有边框。
 - **分隔线**（Markdown 的 `---`）：不画线，只空出一行。
 - **图片**：占满内容栏宽度，没有描边、圆角和阴影。
-- **滚动条**：宽 18px，滑块是直角方块，四周留 7px。页面的滚动条是蓝色；代码块、表格、公式自己的横向滚动条是次要色，免得一条蓝线被读成分隔线。只对 Chrome、Safari、Edge 生效，Firefox 用系统默认的。
+- **Mermaid 图**：构建时渲染成 SVG，颜色只用 `page`、`body`、`muted`、`surface` 四个 token，文字用正文字体，13px 的排版尺寸放大到正文的 0.9em（与代码块同大）。上下各空一行，放不下时自己横向滚动，不缩小文字。样式写在 `@layer base` 之外，否则盖不过 SVG 自带的 `text { font-family }`。
+- **滚动条**：宽 18px，滑块是直角方块，四周留 7px。页面的滚动条是蓝色；代码块、表格、公式、Mermaid 图自己的横向滚动条是次要色，免得一条蓝线被读成分隔线。只对 Chrome、Safari、Edge 生效，Firefox 用系统默认的。
 - **键盘焦点**：2px 蓝色外框。
 
 ## 6．动效
@@ -167,6 +168,7 @@ Shiki 双主题：亮色 `github-light-high-contrast`、暗色 `material-theme-p
 | 行高（想回到原站的 24px） | `global.css` 的 `--spacing-line`，改成 `calc(4rem / 3)`；1.5 倍是 `1.5rem` |
 | 字体 | `global.css` 的 `--font-*`，以及 `src/layouts/Base.astro` 里引入的字体包 |
 | 代码高亮主题 | `astro.config.mjs` 的 `shikiConfig.themes` |
+| Mermaid 图的间距、字体 | `global.css` 的 `.mermaid` |
 | 公式的字号、间距 | `global.css` 的 `.katex`、`.katex-display` |
 | 页头的链接 | `src/layouts/Base.astro` |
 | 界面文字 | 直接写在用到它的组件里；站名和首页简介在 `src/site.config.ts` |
