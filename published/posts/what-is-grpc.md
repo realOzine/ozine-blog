@@ -4,7 +4,7 @@ date: 2025-07-22
 tags:
   - go
   - grpc
-  - 后端
+  - backend
 description: 从一次跨服务调用出发，拆开 gRPC 的编码、线路格式、deadline、元数据和错误码，看它怎样把远程调用写得像本地函数，又把哪些网络问题留给我们处理。
 ---
 
