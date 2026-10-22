@@ -1,6 +1,6 @@
 ---
 title: 多一个字段，内存涨五倍：从编码看 Redis 的数据结构
-date: 2026-08-13
+date: 2025-08-13
 tags:
   - redis
   - backend
