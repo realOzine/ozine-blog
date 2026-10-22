@@ -90,7 +90,7 @@ ozine-blog/
 | `src/components/Toc.astro` | 文章目录 | 渲染二、三级标题的链接，每项带 `depth-2` / `depth-3` 类名；显示位置和样式由 `global.css` 决定。 |
 | `src/plugins/callout.ts` | Callout 渲染插件 | 构建时把 `> [!type]` 引用块转成提示块的 HTML 结构。只管结构，不管颜色。 |
 | `src/plugins/heading-anchor.ts` | 标题锚点插件 | 构建时在正文的二、三级标题后面加一个指向自己的链接。id 取自 Astro 内置的标题 id 插件，不自己算。只管结构，`#` 字符和样式在 `global.css`。 |
-| `src/plugins/mermaid.ts` | Mermaid 渲染插件 | 构建时把 ` ```mermaid ` 代码块交给 beautiful-mermaid 渲染成内联 SVG，颜色用站点 token，删掉库自带的 Google Fonts 引用，尺寸换成 em。图写错会让构建失败。这类代码块在 `astro.config.mjs` 里排除了 Shiki 高亮。 |
+| `src/plugins/mermaid.ts` | Mermaid 渲染插件 | 构建时把 ` ```mermaid ` 代码块交给 beautiful-mermaid 渲染成内联 SVG，颜色用站点 token，删掉库自带的 Google Fonts 引用，按方框重算画布尺寸（库挪动节点后不重算，节点会被裁掉），尺寸换成 em。图写错会让构建失败。这类代码块在 `astro.config.mjs` 里排除了 Shiki 高亮。 |
 | `src/plugins/math.ts` | 公式渲染插件 | 构建时把处理器标出的行内和块级公式交给 KaTeX 渲染成 HTML。公式写错会让构建失败。样式和字体来自 `Base.astro` 引入的 KaTeX 样式表。 |
 | `src/styles/global.css` | 全局样式 | 引入 Tailwind；定义全部设计 token（字体、字符格、颜色，见 `docs/design.md`）；所有元素的基础样式（标题、段落、链接、列表、引用、表格、代码、滚动条），对全站生效；明暗主题的切换；代码高亮的明暗切换；页头、目录、标题锚点、Callout 的外观；任务列表、高亮、按键、脚注、公式的样式。 |
 
