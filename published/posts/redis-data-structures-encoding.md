@@ -66,7 +66,7 @@ flowchart LR
     H["Hash"] --- H1["listpack"] --> H2["hashtable"]
     L["List"] --- L1["listpack"] --> L2["quicklist"]
     SE["Set"] --- SE0["intset"] --> SE1["listpack"] --> SE2["hashtable"]
-    SE0 -->|超过阈值| SE2
+    SE0 --> SE2
     Z["ZSet"] --- Z1["listpack"] --> Z2["skiplist"]
     ST["Stream"] --- ST1["stream（基数树 + listpack）"]
     B["Bitmap、HyperLogLog"] -.-> S
