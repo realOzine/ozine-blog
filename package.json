@@ -33,6 +33,7 @@
     "check": "astro check",
     "test": "node --test 'scripts/**/*.test.ts'",
     "export": "node scripts/export.ts",
-    "release": "node scripts/publish.ts"
+    "release": "node scripts/publish.ts",
+    "postinstall": "node scripts/patch-deps.ts"
   }
 }

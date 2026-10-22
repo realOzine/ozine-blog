@@ -55,6 +55,7 @@ ozine-blog/
 | `scripts/lib/export.ts` | 导出的核心逻辑 | 读取原稿、只取 `published/` 文件夹里的笔记、解析并校验它们的 frontmatter、以笔记名作标题、检查 `slug` 与 `redirect_from` 唯一性、解析双链、把 `==高亮==` 换成 `<mark>`、用 Astro 的 Markdown 处理器取得标题锚点、查找并登记附件、删除 `%%注释%%`、输出公开副本。所有问题收集为带文件和行号的 `Issue`，有任何问题就不写文件。**不负责**：构建网站、Git 操作、Callout 渲染。 |
 | `scripts/export.ts` | `npm run export` 的命令行入口 | 解析参数、调用核心逻辑、打印结果。不含业务规则，输出文字的格式也由核心逻辑提供。 |
 | `scripts/publish.ts` | `npm run release` 的命令行入口 | 串联发布流程：检查 Git 状态 → 导出到 `.publish-tmp/`（与已提交的 `published/` 完全一致时到此结束）→ 用临时副本构建 → 替换 `published/` → 只提交 `published/`（提交信息为 `content: …`）→ 推送 → 等待并报告部署结果。负责失败时停止并说明原因，并把「推送成功」与「上线完成」分开报告。**不负责**：内容规则（委托给 `lib/export.ts`）、部署状态的查询（委托给 `lib/vercel.ts`）。 |
+| `scripts/patch-deps.ts` | 给依赖打补丁 | `npm install` 后由 `postinstall` 调用（本地和 Vercel 都会跑），关掉 beautiful-mermaid 的连线合并（D53）。找不到要改的代码就报错退出，让安装失败。 |
 | `scripts/lib/vercel.ts` | 核实 Vercel 部署 | 通过本机的 `vercel` CLI 按提交哈希查找部署并轮询到终态，返回 ready / failed / timeout / unavailable 四种结果。只查询，不触发部署，也不决定退出码。 |
 | `scripts/vercel.test.ts` | 部署核实逻辑的测试 | 用假的查询函数验证轮询、失败、超时和不可用几种情况，不访问网络。 |
 | `scripts/export.test.ts` | 导出规则的测试 | 文件内的 `BASE` 定义了一个最小的模拟库（博客目录、库外附件目录、库外私密笔记），每个测试把它写到系统临时目录后验证正常路径和各类错误。仓库里不保存样本文章。只测导出，不测页面和发布命令。 |
@@ -99,7 +100,7 @@ ozine-blog/
 | 文件 | 作用 | 负责范围 |
 | --- | --- | --- |
 | `astro.config.mjs` | Astro 配置 | 站点网址 `site`（`https://ozine.me`）、网址末尾斜杠、读取重定向表、Markdown 处理器及其语法开关（取自 `src/lib/markdown.ts`）、Callout、标题锚点、公式三个插件、代码高亮主题、接入 Tailwind、禁止把字体分片内联进样式表。公开副本目录取自 `src/lib/published.ts`。 |
-| `package.json` | 依赖与命令 | 所有 `npm run` 命令的定义。依赖里的 `@fontsource-variable/inconsolata` 和 `@fontsource-variable/source-code-pro` 是随站点部署的两款等宽字体，`lxgw-wenkai-webfont` 是随站点部署的中文字体（霞鹜文楷），`katex` 在构建时渲染公式并提供公式的样式表和字体；开发依赖里的 `sharp` 供 `pic/cut-character.mjs` 使用。 |
+| `package.json` | 依赖与命令 | 所有 `npm run` 命令的定义；`postinstall` 运行 `scripts/patch-deps.ts`。依赖里的 `@fontsource-variable/inconsolata` 和 `@fontsource-variable/source-code-pro` 是随站点部署的两款等宽字体，`lxgw-wenkai-webfont` 是随站点部署的中文字体（霞鹜文楷），`katex` 在构建时渲染公式并提供公式的样式表和字体；开发依赖里的 `sharp` 供 `pic/cut-character.mjs` 使用。 |
 | `package-lock.json` | 依赖版本锁定 | 由 npm 维护。 |
 | `tsconfig.json` | TypeScript 配置 | 继承 Astro 严格模式；允许脚本用 `.ts` 扩展名互相导入。 |
 | `.vercel/` | Vercel CLI 的项目关联信息 | 由 `vercel link` 生成，Git 忽略。核实部署时 CLI 靠它知道查哪个项目。 |
