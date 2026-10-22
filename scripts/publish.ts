@@ -87,7 +87,8 @@ if (unchanged && !args['dry-run']) {
 // ---------- 3. 用临时副本构建网站 ----------
 
 step('构建检查')
-if (!run('npx', ['astro', 'build'], { env: { PUBLISHED_DIR: tmpDir } }).ok) {
+// --force：不用 Markdown 渲染缓存，否则改了插件或依赖补丁、文章没变时，构建出来还是旧样子
+if (!run('npx', ['astro', 'build', '--force'], { env: { PUBLISHED_DIR: tmpDir } }).ok) {
   fail('网站构建失败，没有改动 published/，也没有提交或推送。')
 }
 

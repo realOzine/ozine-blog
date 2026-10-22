@@ -391,6 +391,7 @@
 - **选择**：`scripts/patch-deps.ts` 在 `postinstall` 里把 `dist/index.js` 那一行的 `DEFAULTS2.mergeEdges` 换成 `false`。脚本可重复运行；找不到要改的代码就报错退出，库升级后补丁失效时安装直接失败，不会悄悄发布坏图。
 - **放弃**：npm 12 自带的 `npm patch`——补丁记在 `package.json` 的 `patchedDependencies` 里，Vercel 构建用的 npm 版本较旧时会不声不响地忽略它，线上就用了没打补丁的库；`patch-package`——多一个依赖，而且它在 npm 12 下生成补丁失败。
 - **失**：同一节点的多条连线不再共用主干，分叉多的图线条会多一些。升级 beautiful-mermaid 后要重新核对补丁（失效时安装会报错提醒）。
+- **补充：构建一律加 `--force`**。第一次推送后线上没变：Vercel 打了补丁，但恢复了上次的构建缓存，其中有 Astro 的 Markdown 渲染缓存（`node_modules/.astro/data-store.json`），文章没变就直接用了旧的渲染结果。现在 `npm run build` 和 `release` 的构建都带 `--force`，不读这份缓存。代价是每次全量渲染，本站几秒钟，可以忽略。
 
 ## 6．仍待你决定
 
