@@ -3,7 +3,8 @@ title: 用 AI 长期开发一个项目，我想先把文档减到两份
 date: 2025-10-12
 tags:
   - ai
-  - 软件工程
+  - workflow
+  - engineering
 description: AI 写代码很快，需求文档、分支和 Worktree 却越来越难管理。我想用两份长期文档保存目标与现状，把每次迭代的理由、取舍和验证留在 PR 中。
 ---
  
