@@ -18,10 +18,15 @@ interface Props {
   description?: string
   /** 文章页在左上角显示返回首页的链接 */
   back?: boolean
+  /** 分享卡片的类型：文章页传 article */
+  type?: 'website' | 'article'
 }
 
-const { title, description = site.description, back = false } = Astro.props
+const { title, description = site.description, back = false, type = 'website' } = Astro.props
 const pageTitle = title ? `${title} · ${site.title}` : site.title
+// 正式地址：预览域名、带查询参数的访问都归到 ozine.me 的这个地址上
+const canonical = new URL(Astro.url.pathname, Astro.site).href
+const image = new URL(favicon, Astro.site).href
 ---
 
 <!doctype html>
@@ -31,6 +36,18 @@ const pageTitle = title ? `${title} · ${site.title}` : site.title
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <!-- 分享卡片（X、Telegram、微信等的链接预览）：只有文字和头像，不做配图 -->
+    <meta property="og:type" content={type} />
+    <meta property="og:site_name" content={site.title} />
+    <meta property="og:title" content={title ?? site.title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={image} />
+    <meta property="og:locale" content="zh_CN" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:site" content={`@${site.twitter.split('/').pop()}`} />
+    <slot name="head" />
     <link rel="icon" type="image/png" href={favicon} />
     <link rel="alternate" type="application/rss+xml" title={site.title} href="/rss.xml" />
     <!-- 在页面画出来之前套用上次选的主题，避免闪一下；没选过就跟随系统 -->

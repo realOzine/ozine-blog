@@ -393,6 +393,13 @@
 - **失**：同一节点的多条连线不再共用主干，分叉多的图线条会多一些。升级 beautiful-mermaid 后要重新核对补丁（失效时安装会报错提醒）。
 - **补充：构建一律加 `--force`**。第一次推送后线上没变：Vercel 打了补丁，但恢复了上次的构建缓存，其中有 Astro 的 Markdown 渲染缓存（`node_modules/.astro/data-store.json`），文章没变就直接用了旧的渲染结果。现在 `npm run build` 和 `release` 的构建都带 `--force`，不读这份缓存。代价是每次全量渲染，本站几秒钟，可以忽略。
 
+### D54 SEO 基础：sitemap、robots、canonical、结构化数据、分享卡片
+
+- **原因**：ozine.me 已通过 Search Console 验证，但 `/robots.txt`、sitemap 都是 404，页面没有 canonical，也没有分享卡片和结构化数据。
+- **选择**：`src/pages/sitemap.xml.ts` 和 `src/pages/robots.txt.ts` 两个端点，写法和 `rss.xml.ts` 一样，经 `getPosts` 取文章；`Base.astro` 输出 canonical（`Astro.site` 加当前路径）和 Open Graph / Twitter Card（`summary` 小卡片，图片是网站图标那张头像）；文章页加 JSON-LD `BlogPosting`。部署后要在 Search Console 提交 `https://ozine.me/sitemap.xml`。
+- **放弃**：`@astrojs/sitemap`——多一个依赖、和 Astro 7 的兼容性没核实，也拿不到文章的更新日期；为每篇文章生成分享配图——工作量大，也违背 `docs/design.md` 不放插画的规则；`meta keywords`、hreflang——前者 Google 不看，后者只有一种语言用不上；在 robots.txt 里屏蔽 AI 爬虫——这是内容取舍，不是 SEO，你没要求。
+- **失**：sitemap 里首页和项目页没有 `lastmod`（它们没有可靠的修改日期）；分享卡片的图只有 192×192 的头像，在 X 上是小图卡片，不是大图。
+
 ## 6．仍待你决定
 
 - 设计审查剩下的问题：中等的 7、8、13、17、18，轻微的 20–27（D47）。
