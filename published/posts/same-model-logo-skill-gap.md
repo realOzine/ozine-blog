@@ -6,7 +6,7 @@ tags:
   - workflow
   - thinking
 description: 给 VideoHelper 做 logo，我试了 GPT、Claude 和自己做的 skill，都不满意；换上 logo-design
-  后，一句话就得到了想要的图标。翻完会话记录才发现，差距不在提示词写得好不好。
+  后，一句话就得到了想要的图标。翻完会话记录才发现，差距不在提示词写得有多准确。
 ---
 
 10 月 28 日凌晨，我想给 [VideoHelper](https://videohelper.ozine.me/) 做一个 logo。VideoHelper 是我在做的本地视频检索工具，用一句话就能找到视频里的某个画面、某句台词或某段声音。
